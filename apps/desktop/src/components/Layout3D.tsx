@@ -26,7 +26,7 @@ function profile(layout: Layout, i: number, n = 48): [number, number][] {
   });
 }
 
-function buildLenses(layout: Layout, mode: "2d" | "3d") {
+export function buildLenses(layout: Layout, mode: "2d" | "3d") {
   const g = new THREE.Group();
   const fill = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: mode === "2d" ? 0.14 : 0.22, side: THREE.DoubleSide, depthWrite: false });
   const edge = new THREE.LineBasicMaterial({ color: 0x7dd3fc });
@@ -56,7 +56,7 @@ function buildLenses(layout: Layout, mode: "2d" | "3d") {
 }
 
 /** Reflective surfaces: a thin silver dish (3D) or a hatched plate (2D) on the side away from the incoming light. */
-function buildMirrors(layout: Layout, mode: "2d" | "3d") {
+export function buildMirrors(layout: Layout, mode: "2d" | "3d") {
   const g = new THREE.Group();
   const silver = new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
   const edge = new THREE.LineBasicMaterial({ color: 0xe2e8f0 });

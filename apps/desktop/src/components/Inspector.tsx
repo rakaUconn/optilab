@@ -1,21 +1,5 @@
 import { useStore } from "../store";
-import { Button, Field, NumInput, Section } from "../ui";
-
-const AX = ["x", "y", "z"] as const;
-
-function Vec3({ label, value, onChange }: { label: string; value: number[]; onChange: (v: number[]) => void }) {
-  return (
-    <div className="py-0.5">
-      <div className="text-muted-foreground">{label}</div>
-      <div className="flex gap-1">
-        {AX.map((a, i) => (
-          <label key={a} className="flex min-w-0 flex-1 items-center gap-0.5"><span className="text-[10px] text-muted-foreground">{a}</span>
-            <NumInput value={value[i]} onChange={(v) => onChange(value.map((x, j) => (j === i ? v : x)))} /></label>
-        ))}
-      </div>
-    </div>
-  );
-}
+import { Button, Field, NumInput, Section, Vec3 } from "../ui";
 
 const f = (x: number | null | undefined, d = 3) => (x == null || !Number.isFinite(x) ? "—" : x.toFixed(d));
 

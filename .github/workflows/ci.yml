@@ -16,4 +16,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: apps/desktop/package-lock.json }
-      - run: cd apps/desktop && npm ci && npm run gen:types && git diff --exit-code src/types && npm run typecheck && npm run build
+      - run: cd apps/desktop && npm ci && npm run gen:types && git diff --exit-code src/types && npm run typecheck && npm test && npm run build

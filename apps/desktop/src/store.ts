@@ -2,12 +2,18 @@ import { create } from "zustand";
 import doublet from "../../../samples/doublet.optilab.json";
 import singlet from "../../../samples/singlet.optilab.json";
 import { runJob, type RunningJob } from "./api/client";
+import { makePrimitive, type PrimitiveKind } from "./components/primitives";
 import type { AnalysisRequest, AnalysisResult, CatalogEntry, JobStatus, Solid, Surface, SystemModel } from "./types/api";
 
 export const SAMPLES: Record<string, SystemModel> = {
   "Achromatic doublet f=100": doublet as SystemModel,
   "BK7 singlet": singlet as SystemModel,
 };
+
+export type NonSeq = SystemModel["nonseq"];
+export type Workspace = "sequential" | "nonseq";
+/** Selection ids in the non-sequential editor: "source", "detector" or "solid:<index>". */
+export type SelId = string | null;
 
 export type Tab = "spot" | "rayfan" | "mtf" | "irradiance";
 export type ViewMode = "2d" | "3d";
@@ -20,10 +26,10 @@ let debounce: ReturnType<typeof setTimeout> | undefined;
 export function normalizeModel(m: SystemModel): SystemModel {
   const ns = (m.nonseq ?? {}) as Partial<SystemModel["nonseq"]>;
   const nonseq = {
-    derive_from_sequential: true, max_events: 8, min_weight: 1e-3, tess_rings: 16, tess_segments: 48,
+    derive_from_sequential: true, max_events: 8, min_weight: 1e-3, preview_rays: 60, tess_rings: 16, tess_segments: 48,
     ...ns,
-    extra_solids: (ns.extra_solids ?? []).map((s) => ({ position: [0, 0, 0], rotation_deg: [0, 0, 0], mirror_triangles: [], index: 1.5, ...(s as Partial<Solid>) })),
-    source: { kind: "collimated_grid", beam_diameter: 10, n: 41, angle: 0, z: -5, offset: [0, 0], ...ns.source },
+    extra_solids: (ns.extra_solids ?? []).map((s) => ({ position: [0, 0, 0], rotation_deg: [0, 0, 0], mirror_triangles: [], index: 1.5, kind: "", params: {}, absorbing: false, ...(s as Partial<Solid>) })),
+    source: { kind: "collimated_grid", beam_diameter: 10, n: 41, angle: 0, z: -5, offset: [0, 0], position: null, rotation_deg: [0, 0, 0], ...ns.source },
     detector: { z: null, center: null, normal: null, half_width: 2, bins: 64, ...ns.detector },
   };
   return { ...m, fields: m.fields?.length ? m.fields : [{ angle: 0, weight: 1 }], nonseq: nonseq as SystemModel["nonseq"] };
@@ -46,6 +52,19 @@ function saveUserLib(l: CatalogEntry[]) {
 }
 
 interface State {
+  workspace: Workspace;
+  sel: SelId;
+  nsPast: NonSeq[];
+  nsFuture: NonSeq[];
+  nsView: { rays: boolean; heat: boolean; ghosts: boolean; snap: boolean; mode: "translate" | "rotate" };
+  /** Edit the non-sequential scene; ``history: false`` is for continuous edits (gizmo drags) that commit separately. */
+  nsEdit: (fn: (ns: NonSeq) => void, history?: boolean) => void;
+  nsCommit: (before: NonSeq) => void;
+  nsUndo: () => void;
+  nsRedo: () => void;
+  addPrimitive: (kind: PrimitiveKind) => void;
+  duplicateSolid: (i: number) => void;
+  deleteSolid: (i: number) => void;
   libraryOpen: boolean;
   userLib: CatalogEntry[];
   addUserEntry: (e: CatalogEntry) => void;
@@ -73,6 +92,52 @@ interface State {
 const clone = <T,>(x: T): T => structuredClone(x);
 
 export const useStore = create<State>((set, get) => ({
+  workspace: "sequential",
+  sel: null,
+  nsPast: [],
+  nsFuture: [],
+  nsView: { rays: true, heat: true, ghosts: true, snap: true, mode: "translate" },
+  nsEdit: (fn, history = true) => {
+    const m = clone(get().model);
+    const before = clone(get().model.nonseq);
+    fn(m.nonseq);
+    set((s) => ({ model: m, ...(history ? { nsPast: [...s.nsPast.slice(-99), before], nsFuture: [] } : {}) }));
+  },
+  nsCommit: (before) => set((s) => ({ nsPast: [...s.nsPast.slice(-99), before], nsFuture: [] })),
+  nsUndo: () => {
+    const { nsPast, model } = get();
+    if (!nsPast.length) return;
+    const prev = nsPast[nsPast.length - 1];
+    set((s) => ({ model: { ...s.model, nonseq: clone(prev) }, nsPast: nsPast.slice(0, -1), nsFuture: [clone(model.nonseq), ...s.nsFuture] }));
+  },
+  nsRedo: () => {
+    const { nsFuture, model } = get();
+    if (!nsFuture.length) return;
+    const next = nsFuture[0];
+    set((s) => ({ model: { ...s.model, nonseq: clone(next) }, nsFuture: nsFuture.slice(1), nsPast: [...s.nsPast, clone(model.nonseq)] }));
+  },
+  addPrimitive: (kind) => {
+    const made = makePrimitive(kind);
+    const n = get().model.nonseq.extra_solids.length;
+    get().nsEdit((ns) => {
+      ns.extra_solids.push({ ...made, name: `${made.name} ${n + 1}`, position: [0, 0, 20 + 15 * n], rotation_deg: [0, 0, 0] } as Solid);
+    });
+    set({ sel: `solid:${n}` });
+  },
+  duplicateSolid: (i) => {
+    const n = get().model.nonseq.extra_solids.length;
+    get().nsEdit((ns) => {
+      const c = structuredClone(ns.extra_solids[i]);
+      c.name = `${c.name} copy`;
+      c.position = [c.position[0] + 10, c.position[1], c.position[2] + 10];
+      ns.extra_solids.push(c);
+    });
+    set({ sel: `solid:${n}` });
+  },
+  deleteSolid: (i) => {
+    get().nsEdit((ns) => { ns.extra_solids.splice(i, 1); });
+    set({ sel: null });
+  },
   libraryOpen: false,
   userLib: loadUserLib(),
   addUserEntry: (e) => {
@@ -107,11 +172,13 @@ export const useStore = create<State>((set, get) => ({
     }
   },
   addSolid: (s) => {
-    const m = clone(get().model);
-    const sol = structuredClone(s);
-    sol.name = `${sol.name} #${m.nonseq.extra_solids.length + 1}`;
-    m.nonseq.extra_solids.push(sol);
-    set({ model: m, tab: "irradiance" });
+    const n = get().model.nonseq.extra_solids.length;
+    get().nsEdit((ns) => {
+      const sol = structuredClone(s);
+      sol.name = `${sol.name} #${n + 1}`;
+      ns.extra_solids.push(sol);
+    });
+    set({ tab: "irradiance", sel: `solid:${n}` });
   },
   model: clone(SAMPLES["Achromatic doublet f=100"]),
   result: {} as AnalysisResult,
@@ -124,7 +191,7 @@ export const useStore = create<State>((set, get) => ({
   autofocus: true,
   set: (p) => set(p),
   setModel: (m, trace = true) => {
-    set({ model: normalizeModel(m), selSurface: 0, selField: 0 });
+    set({ model: normalizeModel(m), selSurface: 0, selField: 0, sel: null, nsPast: [], nsFuture: [] });
     if (trace) void get().trace();
   },
   patch: (f) => {

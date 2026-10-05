@@ -59,6 +59,12 @@
       "offset": [
         0.0,
         0.0
+      ],
+      "position": null,
+      "rotation_deg": [
+        0.0,
+        0.0,
+        0.0
       ]
     },
     "detector": {
@@ -70,6 +76,7 @@
     },
     "max_events": 8,
     "min_weight": 0.001,
+    "preview_rays": 60,
     "tess_rings": 16,
     "tess_segments": 48
   }

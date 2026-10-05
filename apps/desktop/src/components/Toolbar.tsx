@@ -4,7 +4,7 @@ import { SAMPLES, useStore } from "../store";
 import type { SystemModel } from "../types/api";
 
 export function Toolbar({ engine }: { engine: string }) {
-  const { job, trace, cancel, auto, set, setModel, model, view } = useStore();
+  const { job, trace, cancel, auto, set, setModel, model, view, workspace } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const ready = engine === "ready";
 
@@ -46,13 +46,19 @@ export function Toolbar({ engine }: { engine: string }) {
       <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => void open(e.target.files?.[0])} />
       <div className="mx-1 h-5 w-px bg-border" />
       <div className="flex rounded-md bg-secondary p-0.5">
+        {([["sequential", "Sequential"], ["nonseq", "Non-sequential"]] as const).map(([w, label]) => (
+          <button key={w} onClick={() => set({ workspace: w, ...(w === "nonseq" ? { tab: "irradiance" as const } : {}) })}
+            className={cx("h-6 rounded px-2.5 text-xs", workspace === w ? "bg-background text-foreground" : "text-muted-foreground")}>{label}</button>
+        ))}
+      </div>
+      {workspace === "sequential" && <div className="flex rounded-md bg-secondary p-0.5">
         {(["2d", "3d"] as const).map((v) => (
           <button key={v} onClick={() => set({ view: v })}
             className={cx("h-6 rounded px-2.5 text-xs", view === v ? "bg-background text-foreground" : "text-muted-foreground")}>
             {v.toUpperCase()}
           </button>
         ))}
-      </div>
+      </div>}
       <label className="ml-1 flex items-center gap-1.5 text-xs text-muted-foreground">
         <input type="checkbox" checked={auto} onChange={(e) => set({ auto: e.target.checked })} /> Auto-trace
       </label>

@@ -70,6 +70,22 @@ mirrors, or *Add to scene* for prisms. Edited parts are saved to *My library* (b
   **Prisms and fold mirrors** are non-sequential solids (posed with position + rotation, refracting and reflective faces);
   the non-sequential detector can be placed at any centre/normal, and TIR/mirror bounces are not counted as ghosts.
 
+## Non-sequential editor (place objects in 3D)
+
+Switch the toolbar to **Non-sequential**. The centre becomes a 3D workspace with a bench grid and world axes
+(x red, y green, z blue = beam axis); the left panel is the scene tree, the right panel the selected object's properties.
+
+* **Select** by clicking an object in the view or the list; **Move (W)** / **Rotate (E)** with the gizmo (snap 1 mm / 5°), or type
+  exact position / rotation (Rz·Ry·Rx, degrees). Del removes, D duplicates, Ctrl+Z / Ctrl+Y undo/redo (one step per drag or edit),
+  Esc deselects. View presets: 3D, Top, Side, Front.
+* **Objects**: the sequential lens system (as a read-only, switchable part of the scene), the **source** (free pose, grid size,
+  diameter), the **detector** (any plane: centre + normal, or snapped back to the image plane), and solids you add:
+  glass block, cylinder, ball lens, mirror plate, **aperture** (absorbing annulus), beam block (absorber), plus any library prism or fold mirror.
+  Primitive dimensions are editable and the mesh is regenerated.
+* **Run non-sequential** traces with Fresnel splitting; the result is drawn in the scene: yellow rays are direct paths,
+  pink rays carry at least one partial reflection (ghosts), and the irradiance heat-map is painted on the detector plane.
+  The bottom *Irradiance* tab keeps the numbers (power on detector, ghost paths).
+
 ## What is computed
 
 | Analysis | Method |
@@ -86,7 +102,7 @@ Jobs run asynchronously with progress and cooperative **Cancel** (checked per ra
 
 ## Validation
 
-`cd engine && pytest` (46 tests) checks the engine against *independent* references:
+`cd engine && pytest` (53 tests) checks the engine against *independent* references:
 
 * singlet vs. the thick-lens lensmaker's formula, and singlet + doublet vs. an independent ABCD-matrix implementation (`tests/analytic.py`);
 * real marginal rays vs. a separate angle-based (trigonometric) meridional trace to 1e-9 mm;
@@ -95,6 +111,7 @@ Jobs run asynchronously with progress and cooperative **Cancel** (checked per ra
 * achromat: BFL(F) = BFL(C), singlet chromatic shift = f/V;
 * checked-in reference JSON (`engine/reference/*.json`, regenerate with `engine/scripts/make_reference.py`);
 * non-sequential: Fresnel normal-incidence R, plane-parallel plate transmission `(1−R)/(1+R)` and ghost share `R²` within 5 %, energy conservation, STL parser;
+* non-sequential editor: free-pose source (identical to the legacy source when untilted), absorbing blocks remove exactly the rays they cover, previewed ray paths follow the real trace (fold mirror → detector); UI unit tests (`npm test` in `apps/desktop`): primitive volumes/winding and the engine ↔ three.js rotation convention;
 * API: job lifecycle, progress, cancel, error reporting;
 * catalogue: every stock singlet/achromat hits its nominal EFL, concave mirror f = R/2, parabolic mirror perfect on axis,
   spherical-mirror aberration vs the exact formula, Zemax round-trip, right-angle prism (TIR, 90° turn, (1−R)²),
