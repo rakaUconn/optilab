@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { waitForEngine } from "./api/client";
 import { Inspector } from "./components/Inspector";
+import { Library } from "./components/Library";
 import { Layout3D } from "./components/Layout3D";
 import { Plots } from "./components/Plots";
 import { SurfaceTable } from "./components/SurfaceTable";
@@ -29,6 +30,7 @@ export default function App() {
         <Inspector />
       </div>
       <Plots />
+      <Library />
     </div>
   );
 }

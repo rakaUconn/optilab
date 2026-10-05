@@ -40,6 +40,7 @@ export function Toolbar({ engine }: { engine: string }) {
         <option value="">Load sample…</option>
         {Object.keys(SAMPLES).map((k) => <option key={k}>{k}</option>)}
       </select>
+      <Button variant="primary" onClick={() => set({ libraryOpen: true })}>Library</Button>
       <Button onClick={() => fileRef.current?.click()}>Open</Button>
       <Button onClick={save}>Save</Button>
       <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => void open(e.target.files?.[0])} />

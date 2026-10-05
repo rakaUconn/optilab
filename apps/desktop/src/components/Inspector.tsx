@@ -1,6 +1,22 @@
 import { useStore } from "../store";
 import { Button, Field, NumInput, Section } from "../ui";
 
+const AX = ["x", "y", "z"] as const;
+
+function Vec3({ label, value, onChange }: { label: string; value: number[]; onChange: (v: number[]) => void }) {
+  return (
+    <div className="py-0.5">
+      <div className="text-muted-foreground">{label}</div>
+      <div className="flex gap-1">
+        {AX.map((a, i) => (
+          <label key={a} className="flex min-w-0 flex-1 items-center gap-0.5"><span className="text-[10px] text-muted-foreground">{a}</span>
+            <NumInput value={value[i]} onChange={(v) => onChange(value.map((x, j) => (j === i ? v : x)))} /></label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const f = (x: number | null | undefined, d = 3) => (x == null || !Number.isFinite(x) ? "—" : x.toFixed(d));
 
 export function Inspector() {
@@ -54,6 +70,38 @@ export function Inspector() {
             <Field label="Conic k"><NumInput value={s.conic} onChange={(v) => patch((m) => { m.surfaces[selSurface].conic = v; })} /></Field>
           </>
         )}
+      </Section>
+
+      <Section title="Non-sequential" unit="source · detector · solids">
+        <Field label="Beam ⌀ (mm)"><NumInput value={model.nonseq.source.beam_diameter} onChange={(v) => patch((m) => { m.nonseq.source.beam_diameter = Math.max(0.1, v); })} /></Field>
+        <Field label="Grid n×n"><NumInput value={model.nonseq.source.n} step={2} onChange={(v) => patch((m) => { m.nonseq.source.n = Math.min(401, Math.max(3, Math.round(v))); })} /></Field>
+        <Field label="Tilt (deg)"><NumInput value={model.nonseq.source.angle} onChange={(v) => patch((m) => { m.nonseq.source.angle = v; })} /></Field>
+        <Field label="Start z (mm)"><NumInput value={model.nonseq.source.z} onChange={(v) => patch((m) => { m.nonseq.source.z = v; })} /></Field>
+        <Vec3 label="Beam centre (x, y)" value={[model.nonseq.source.offset[0], model.nonseq.source.offset[1], 0]} onChange={(v) => patch((m) => { m.nonseq.source.offset = [v[0], v[1]]; })} />
+        <label className="mt-1 flex items-center justify-between py-0.5">
+          <span className="text-muted-foreground">Detector at image plane</span>
+          <input type="checkbox" checked={!model.nonseq.detector.center}
+            onChange={(e) => patch((m) => { m.nonseq.detector.center = e.target.checked ? null : [0, 0, result.image_z ?? 0]; m.nonseq.detector.normal = e.target.checked ? null : [0, 0, 1]; })} />
+        </label>
+        {model.nonseq.detector.center && (
+          <>
+            <Vec3 label="Detector centre" value={model.nonseq.detector.center} onChange={(v) => patch((m) => { m.nonseq.detector.center = v; })} />
+            <Vec3 label="Detector normal" value={model.nonseq.detector.normal ?? [0, 0, 1]} onChange={(v) => patch((m) => { m.nonseq.detector.normal = v; })} />
+          </>
+        )}
+        <Field label="Detector ± (mm)"><NumInput value={model.nonseq.detector.half_width} onChange={(v) => patch((m) => { m.nonseq.detector.half_width = Math.max(0.01, v); })} /></Field>
+        {model.nonseq.extra_solids.map((sol, i) => (
+          <div key={i} className="mt-2 rounded-md border border-border p-2">
+            <div className="flex items-center justify-between">
+              <input value={sol.name} onChange={(e) => patch((m) => { m.nonseq.extra_solids[i].name = e.target.value; })}
+                className="h-6 w-full min-w-0 rounded-sm border border-transparent bg-transparent px-1 text-xs font-medium hover:border-input focus:border-ring focus:outline-none" />
+              <button className="px-1 text-muted-foreground hover:text-foreground" title="Remove" onClick={() => patch((m) => { m.nonseq.extra_solids.splice(i, 1); })}>×</button>
+            </div>
+            <Vec3 label="Position (mm)" value={sol.position} onChange={(v) => patch((m) => { m.nonseq.extra_solids[i].position = v; })} />
+            <Vec3 label="Rotation (deg, Rz·Ry·Rx)" value={sol.rotation_deg} onChange={(v) => patch((m) => { m.nonseq.extra_solids[i].rotation_deg = v; })} />
+          </div>
+        ))}
+        {!model.nonseq.extra_solids.length && <p className="mt-1 text-muted-foreground">No prisms or fold mirrors. Add them from the Library.</p>}
       </Section>
 
       <Section title="First-order" unit="primary λ">

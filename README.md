@@ -53,6 +53,23 @@ Open `samples/doublet.optilab.json` (f = 100 mm N-BK7/F2 achromat, also in the *
 the source is a collimated grid, the detector a plane at the image plane. Extra STL solids can be appended
 (`optilab.nonseq.mesh.load_stl`).
 
+## Component library (lenses, mirrors, prisms)
+
+**Library** in the toolbar opens a searchable catalogue (type / kind / EFL range / text), a cross-section preview, a
+**lens editor** with a live first-order readout (EFL, BFL, F/#), and *Insert after surface* / *Replace system* for lenses and
+mirrors, or *Add to scene* for prisms. Edited parts are saved to *My library* (browser storage) and can be exported as JSON.
+
+* **Generic** parts (≈210) are generated from nominal specs — plano/bi-convex, plano/bi-concave, meniscus, BK7/F2 achromats,
+  windows, spherical and parabolic mirrors, flat mirrors, right-angle prisms (TIR and mirror-coated), knife-edge 45° mirrors,
+  45° fold mirrors and 60° dispersing prisms. They are labelled *Generic*: they are **not** any manufacturer's prescriptions.
+* **Real Thorlabs / Edmund Optics parts**: both publish a Zemax `.zmx` file per part number. Use *Import Zemax file*, pick the
+  vendor and enter the part number; the prescription is stored with that vendor/part tag. Supported: STANDARD surfaces
+  (radius, thickness, conic, semi-diameter, stop, mirrors); glasses in the built-in set, or any glass carrying `nd`/`Vd`
+  in the file (approximated with a two-term Cauchy model). Anything else is rejected with an explicit error.
+* **Mirrors** are sequential surfaces with medium `MIRROR` (use a negative thickness after them, Zemax-style).
+  **Prisms and fold mirrors** are non-sequential solids (posed with position + rotation, refracting and reflective faces);
+  the non-sequential detector can be placed at any centre/normal, and TIR/mirror bounces are not counted as ghosts.
+
 ## What is computed
 
 | Analysis | Method |
@@ -69,7 +86,7 @@ Jobs run asynchronously with progress and cooperative **Cancel** (checked per ra
 
 ## Validation
 
-`cd engine && pytest` (29 tests) checks the engine against *independent* references:
+`cd engine && pytest` (46 tests) checks the engine against *independent* references:
 
 * singlet vs. the thick-lens lensmaker's formula, and singlet + doublet vs. an independent ABCD-matrix implementation (`tests/analytic.py`);
 * real marginal rays vs. a separate angle-based (trigonometric) meridional trace to 1e-9 mm;
@@ -78,7 +95,10 @@ Jobs run asynchronously with progress and cooperative **Cancel** (checked per ra
 * achromat: BFL(F) = BFL(C), singlet chromatic shift = f/V;
 * checked-in reference JSON (`engine/reference/*.json`, regenerate with `engine/scripts/make_reference.py`);
 * non-sequential: Fresnel normal-incidence R, plane-parallel plate transmission `(1−R)/(1+R)` and ghost share `R²` within 5 %, energy conservation, STL parser;
-* API: job lifecycle, progress, cancel, error reporting.
+* API: job lifecycle, progress, cancel, error reporting;
+* catalogue: every stock singlet/achromat hits its nominal EFL, concave mirror f = R/2, parabolic mirror perfect on axis,
+  spherical-mirror aberration vs the exact formula, Zemax round-trip, right-angle prism (TIR, 90° turn, (1−R)²),
+  fold-mirror and knife-edge mirror (100 % reflection), 60° prism deviation vs an independent Snell trace (a detector 3° off misses).
 
 ## Building installers
 
@@ -122,7 +142,7 @@ Requires an Apple Developer account ($99/yr) and a *Developer ID Application* ce
 
 ## Limitations (MVP)
 
-* Object at infinity (field = angle); no finite conjugates, tilts/decentres, mirrors, coatings or polarisation.
+* Object at infinity (field = angle); no finite conjugates, tilts/decentres (use non-sequential solids for folds), coatings or polarisation. Sequential mirrors are on-axis only.
 * Glass catalogue is a small built-in Sellmeier set (no AGF import yet).
 * MTF is monochromatic per wavelength (not polychromatic) and uses the geometric wavefront (no diffraction of edges).
 * Non-sequential intersection is brute-force vectorised over triangles (fine to ~10⁴ triangles × 10⁴ rays), no BVH yet; scatter is not modelled.

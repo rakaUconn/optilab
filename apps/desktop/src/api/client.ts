@@ -1,4 +1,4 @@
-import type { AnalysisRequest, AnalysisResult, JobStatus } from "../types/api";
+import type { AnalysisRequest, AnalysisResult, CatalogEntry, ImportRequest, JobStatus, ParaxialResult, SystemModel } from "../types/api";
 
 interface EngineInfo { base: string; token: string | null }
 let infoPromise: Promise<EngineInfo> | null = null;
@@ -39,6 +39,9 @@ export async function waitForEngine(timeoutMs = 20000): Promise<void> {
 }
 
 export const listGlasses = () => call<string[]>("/glasses");
+export const listCatalog = () => call<CatalogEntry[]>("/catalog");
+export const importZmx = (req: ImportRequest) => call<CatalogEntry>("/catalog/import", { method: "POST", body: JSON.stringify(req) });
+export const paraxial = (model: SystemModel) => call<ParaxialResult[]>("/paraxial", { method: "POST", body: JSON.stringify({ model }) });
 
 export interface RunningJob {
   done: Promise<JobStatus>;

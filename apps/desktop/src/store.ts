@@ -2,7 +2,7 @@ import { create } from "zustand";
 import doublet from "../../../samples/doublet.optilab.json";
 import singlet from "../../../samples/singlet.optilab.json";
 import { runJob, type RunningJob } from "./api/client";
-import type { AnalysisRequest, AnalysisResult, JobStatus, SystemModel } from "./types/api";
+import type { AnalysisRequest, AnalysisResult, CatalogEntry, JobStatus, Solid, Surface, SystemModel } from "./types/api";
 
 export const SAMPLES: Record<string, SystemModel> = {
   "Achromatic doublet f=100": doublet as SystemModel,
@@ -16,7 +16,44 @@ const SEQ: AnalysisRequest["analyses"] = ["layout", "spot", "rayfan", "mtf"];
 let current: RunningJob | null = null;
 let debounce: ReturnType<typeof setTimeout> | undefined;
 
+/** Fill defaults for files written by older versions (or hand-edited JSON). */
+export function normalizeModel(m: SystemModel): SystemModel {
+  const ns = (m.nonseq ?? {}) as Partial<SystemModel["nonseq"]>;
+  const nonseq = {
+    derive_from_sequential: true, max_events: 8, min_weight: 1e-3, tess_rings: 16, tess_segments: 48,
+    ...ns,
+    extra_solids: (ns.extra_solids ?? []).map((s) => ({ position: [0, 0, 0], rotation_deg: [0, 0, 0], mirror_triangles: [], index: 1.5, ...(s as Partial<Solid>) })),
+    source: { kind: "collimated_grid", beam_diameter: 10, n: 41, angle: 0, z: -5, offset: [0, 0], ...ns.source },
+    detector: { z: null, center: null, normal: null, half_width: 2, bins: 64, ...ns.detector },
+  };
+  return { ...m, fields: m.fields?.length ? m.fields : [{ angle: 0, weight: 1 }], nonseq: nonseq as SystemModel["nonseq"] };
+}
+
+const USER_KEY = "optilab.userlib.v1";
+function loadUserLib(): CatalogEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(USER_KEY) ?? "[]") as CatalogEntry[];
+  } catch {
+    return [];
+  }
+}
+function saveUserLib(l: CatalogEntry[]) {
+  try {
+    localStorage.setItem(USER_KEY, JSON.stringify(l));
+  } catch {
+    /* storage unavailable: the library simply is not persisted */
+  }
+}
+
 interface State {
+  libraryOpen: boolean;
+  userLib: CatalogEntry[];
+  addUserEntry: (e: CatalogEntry) => void;
+  removeUserEntry: (id: string) => void;
+  /** Sequential parts (lens/mirror): splice into the surface table or replace the whole system. */
+  insertEntry: (e: CatalogEntry, mode: "after" | "replace", gap: number) => void;
+  /** Prisms / fold mirrors: add a posed non-sequential solid. */
+  addSolid: (s: Solid) => void;
   model: SystemModel;
   result: AnalysisResult;
   job: { running: boolean; progress: number; message: string; error: string | null; kind: "seq" | "nonseq" | null };
@@ -36,6 +73,46 @@ interface State {
 const clone = <T,>(x: T): T => structuredClone(x);
 
 export const useStore = create<State>((set, get) => ({
+  libraryOpen: false,
+  userLib: loadUserLib(),
+  addUserEntry: (e) => {
+    const l = [e, ...get().userLib.filter((x) => x.id !== e.id)];
+    saveUserLib(l);
+    set({ userLib: l });
+  },
+  removeUserEntry: (id) => {
+    const l = get().userLib.filter((x) => x.id !== id);
+    saveUserLib(l);
+    set({ userLib: l });
+  },
+  insertEntry: (e, mode, gap) => {
+    const parts: Surface[] = structuredClone(e.surfaces).map((s) => ({ ...s, is_stop: false }));
+    if (mode === "replace") {
+      parts[0].is_stop = true;
+      const sd = Math.min(...parts.map((s) => s.semi_diameter));
+      get().setModel({
+        ...clone(get().model),
+        name: e.name,
+        surfaces: parts,
+        aperture: { kind: "epd", value: Math.round(sd * 2 * 0.9 * 100) / 100 },
+        fields: [{ angle: 0, weight: 1 }],
+      });
+    } else {
+      const m = clone(get().model);
+      const idx = Math.min(get().selSurface + 1, m.surfaces.length);
+      if (idx < m.surfaces.length) parts[parts.length - 1].thickness = gap;
+      m.surfaces.splice(idx, 0, ...parts);
+      get().setModel(m);
+      set({ selSurface: idx });
+    }
+  },
+  addSolid: (s) => {
+    const m = clone(get().model);
+    const sol = structuredClone(s);
+    sol.name = `${sol.name} #${m.nonseq.extra_solids.length + 1}`;
+    m.nonseq.extra_solids.push(sol);
+    set({ model: m, tab: "irradiance" });
+  },
   model: clone(SAMPLES["Achromatic doublet f=100"]),
   result: {} as AnalysisResult,
   job: { running: false, progress: 0, message: "", error: null, kind: null },
@@ -47,7 +124,7 @@ export const useStore = create<State>((set, get) => ({
   autofocus: true,
   set: (p) => set(p),
   setModel: (m, trace = true) => {
-    set({ model: m, selSurface: 0, selField: 0 });
+    set({ model: normalizeModel(m), selSurface: 0, selField: 0 });
     if (trace) void get().trace();
   },
   patch: (f) => {

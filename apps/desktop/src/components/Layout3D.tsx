@@ -3,25 +3,18 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useStore } from "../store";
 import type { Layout, SystemModel } from "../types/api";
+import { isAir, isMirror, poseTriangles, sag } from "./profile";
 
 export const FIELD_COLORS = [0x60a5fa, 0x34d399, 0xfbbf24, 0xf472b6, 0xa78bfa, 0x2dd4bf, 0xfb923c, 0x94a3b8];
-
-const isAir = (g: string) => ["", "AIR", "VACUUM"].includes(g.trim().toUpperCase());
-
-/** Conic sag, same formula as the engine. */
-function sag(r: number, R: number, k: number) {
-  if (R === 0) return 0;
-  const c = 1 / R;
-  const arg = 1 - (1 + k) * c * c * r * r;
-  return (c * r * r) / (1 + Math.sqrt(Math.max(arg, 0)));
-}
 
 /** Engine (x, y, z) -> three (X = z axial, Y = y, Z = x). */
 const v = (p: readonly number[]) => new THREE.Vector3(p[2], p[1], p[0]);
 
 function elements(layout: Layout) {
   const out: [number, number][] = [];
-  for (let i = 0; i < layout.surface_z.length - 1; i++) if (!isAir(layout.glass_after[i])) out.push([i, i + 1]);
+  for (let i = 0; i < layout.surface_z.length - 1; i++) {
+    if (!isAir(layout.glass_after[i]) && !isMirror(layout.glass_after[i]) && !isMirror(layout.glass_after[i + 1])) out.push([i, i + 1]);
+  }
   return out;
 }
 
@@ -62,10 +55,71 @@ function buildLenses(layout: Layout, mode: "2d" | "3d") {
   return g;
 }
 
+/** Reflective surfaces: a thin silver dish (3D) or a hatched plate (2D) on the side away from the incoming light. */
+function buildMirrors(layout: Layout, mode: "2d" | "3d") {
+  const g = new THREE.Group();
+  const silver = new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
+  const edge = new THREE.LineBasicMaterial({ color: 0xe2e8f0 });
+  let dir = 1;
+  layout.glass_after.forEach((gl, i) => {
+    if (!isMirror(gl)) return;
+    const front = profile(layout, i);
+    if (mode === "3d") {
+      const geo = new THREE.LatheGeometry(front.map(([r, z]) => new THREE.Vector2(r, z)), 72);
+      geo.rotateZ(-Math.PI / 2);
+      g.add(new THREE.Mesh(geo, silver));
+    } else {
+      const top = front.map(([r, z]) => new THREE.Vector2(z, r));
+      const upper = top.map((p) => new THREE.Vector2(p.x + dir * 3, p.y));
+      const poly = [...top.slice().reverse().map((p) => new THREE.Vector2(p.x, -p.y)), ...top, ...upper.slice().reverse(), ...upper.map((p) => new THREE.Vector2(p.x, -p.y))];
+      g.add(new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(poly)), silver));
+      const line = [...top.slice().reverse().map((p) => new THREE.Vector3(p.x, -p.y, 0)), ...top.map((p) => new THREE.Vector3(p.x, p.y, 0))];
+      g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(line), new THREE.LineBasicMaterial({ color: 0xf8fafc })));
+      void edge;
+    }
+    dir = -dir;
+  });
+  return g;
+}
+
+/** Non-sequential solids (prisms, fold mirrors) in their placed pose, plus the detector plane when it is posed. */
+function buildSolids(model: SystemModel) {
+  const g = new THREE.Group();
+  const toGeo = (tris: number[][][]) => {
+    const pos: number[] = [];
+    for (const t of tris) for (const p of t) pos.push(p[2], p[1], p[0]); // engine (x,y,z) -> three (X=z, Y=y, Z=x)
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.computeVertexNormals();
+    return geo;
+  };
+  for (const s of model.nonseq.extra_solids) {
+    for (const [tris, color, op] of [[s.triangles, 0x38bdf8, 0.22], [s.mirror_triangles, 0xe2e8f0, 0.9]] as const) {
+      if (!tris.length) continue;
+      const geo = toGeo(poseTriangles(tris, s));
+      g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, side: THREE.DoubleSide, depthWrite: false })));
+      g.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 20), new THREE.LineBasicMaterial({ color: color === 0xe2e8f0 ? 0xffffff : 0x7dd3fc })));
+    }
+  }
+  const d = model.nonseq.detector;
+  if (d.center) {
+    const n = new THREE.Vector3(...(d.normal ?? [0, 0, 1])).normalize();
+    const up = Math.abs(n.y) < 0.99 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+    const u = new THREE.Vector3().crossVectors(up, n).normalize();
+    const v = new THREE.Vector3().crossVectors(n, u);
+    const c = new THREE.Vector3(...d.center);
+    const w = d.half_width;
+    const corner = (a: number, b: number) => c.clone().addScaledVector(u, a * w).addScaledVector(v, b * w);
+    const e = [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)].map((p) => new THREE.Vector3(p.z, p.y, p.x)); // engine -> three
+    g.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(e), new THREE.LineBasicMaterial({ color: 0xfbbf24 })));
+  }
+  return g;
+}
+
 function buildRays(layout: Layout, model: SystemModel, mode: "2d" | "3d") {
   const g = new THREE.Group();
-  const span = layout.image_z - layout.surface_z[0];
-  const lead = Math.max(span * 0.18, 5);
+  const all = [...layout.surface_z, layout.image_z];
+  const lead = Math.max((Math.max(...all) - Math.min(...all)) * 0.18, 5);
   const byField = new Map<number, number[]>();
   const bad: number[] = [];
   for (const ray of layout.rays) {
@@ -92,9 +146,11 @@ function buildRays(layout: Layout, model: SystemModel, mode: "2d" | "3d") {
 
 function buildDecor(layout: Layout) {
   const g = new THREE.Group();
-  const z0 = layout.surface_z[0] - Math.max((layout.image_z - layout.surface_z[0]) * 0.18, 5);
+  const all = [...layout.surface_z, layout.image_z];
+  const span = Math.max(...all) - Math.min(...all);
+  const lead = Math.max(span * 0.18, 5);
   const axis = new THREE.LineDashedMaterial({ color: 0x475569, dashSize: 2, gapSize: 2 });
-  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(z0, 0, 0), new THREE.Vector3(layout.image_z + 5, 0, 0)]), axis);
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(Math.min(...all) - lead, 0, 0), new THREE.Vector3(Math.max(...all) + 5, 0, 0)]), axis);
   line.computeLineDistances();
   g.add(line);
   const h = Math.max(...layout.surface_sd) * 0.35;
@@ -170,13 +226,17 @@ export function Layout3D() {
         disposeGroup(content);
         content = new THREE.Group();
         scene.add(content);
-        if (layout) {
-          const z0 = layout.surface_z[0];
-          const sd = Math.max(...layout.surface_sd);
-          const next = { cx: (z0 + layout.image_z) / 2, half: Math.max((layout.image_z - z0) / 2 + 10, sd * 1.2), ymax: sd };
+        const solidPts = model.nonseq.extra_solids.flatMap((s) => poseTriangles([...s.triangles, ...s.mirror_triangles], s).flat());
+        const zs = [...(layout ? [...layout.surface_z, layout.image_z] : []), ...solidPts.map((p) => p[2])];
+        if (zs.length) {
+          const zmin = Math.min(...zs) - (layout ? Math.max((layout.image_z - layout.surface_z[0]) * 0.18, 5) : 5);
+          const zmax = Math.max(...zs) + 5;
+          const ym = Math.max(layout ? Math.max(...layout.surface_sd) : 0, ...solidPts.map((p) => Math.abs(p[1])), model.nonseq.detector.center ? Math.abs(model.nonseq.detector.center[1]) : 0, 1);
+          const next = { cx: (zmin + zmax) / 2, half: Math.max((zmax - zmin) / 2 + 5, ym * 1.2), ymax: ym };
           const refit = newMode !== mode || Math.abs(next.cx - bounds.cx) > 1e-9 || Math.abs(next.half - bounds.half) / bounds.half > 0.5;
           bounds = next;
-          content.add(buildDecor(layout), buildLenses(layout, newMode), buildRays(layout, model, newMode));
+          if (layout) content.add(buildDecor(layout), buildLenses(layout, newMode), buildMirrors(layout, newMode), buildRays(layout, model, newMode));
+          content.add(buildSolids(model));
           if (refit) setup(newMode);
         } else if (newMode !== mode) setup(newMode);
         render();
@@ -198,7 +258,7 @@ export function Layout3D() {
       <div className="pointer-events-none absolute left-3 top-2 text-[11px] text-muted-foreground">
         {view === "2d" ? "Layout y–z (tangential fan) · scroll to zoom, drag to pan" : "3D layout · drag to orbit"}
       </div>
-      {!result.layout && <div className="absolute inset-0 grid place-items-center text-muted-foreground">Run a trace to see the layout</div>}
+      {!result.layout && !model.nonseq.extra_solids.length && <div className="absolute inset-0 grid place-items-center text-muted-foreground">Run a trace to see the layout</div>}
     </div>
   );
 }

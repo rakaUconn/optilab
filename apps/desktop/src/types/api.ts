@@ -1,54 +1,34 @@
 /* GENERATED from schema/optilab.schema.json by `npm run gen:types`. DO NOT EDIT. */
 
-export type Analyses = ("layout" | "spot" | "rayfan" | "opd" | "mtf" | "irradiance")[];
+export type Bfl = number | null;
+export type Category = "lens" | "mirror" | "prism";
 /**
- * Place image plane at paraxial focus (primary λ)
+ * Clear outer dimension (mm)
  */
-export type Autofocus = boolean;
-export type FanPoints = number;
-export type LayoutRays = number;
-export type Kind = "epd";
+export type Diameter = number;
+export type Efl = number | null;
+export type Fno = number | null;
+export type Glasses = string[];
+export type Id = string;
 /**
- * Entrance pupil diameter (mm)
+ * plano-convex, bi-convex, doublet, concave-mirror, right-angle-prism, ...
  */
-export type Value = number;
-/**
- * Field angle in y-z plane (deg)
- */
-export type Angle = number;
-export type Weight = number;
-export type Fields = FieldPoint[];
+export type Kind = string;
 export type Name = string;
-export type DeriveFromSequential = boolean;
-export type Bins = number;
-export type HalfWidth = number;
+export type PartNumber = string;
 /**
- * None: image plane of the sequential system
+ * Constant index or a glass name
  */
-export type Z = number | null;
-export type Index = number;
+export type Index = number | string;
+export type MirrorTriangles = number[][][];
 export type Name1 = string;
+export type Position = number[];
+export type RotationDeg = number[];
 export type Triangles = number[][][];
-export type ExtraSolids = Solid[];
-export type MaxEvents = number;
 /**
- * Prune rays below this fraction of one launched ray weight
+ * how the prescription was obtained
  */
-export type MinWeight = number;
-export type Angle1 = number;
-export type BeamDiameter = number;
-export type Kind1 = "collimated_grid";
-/**
- * Grid samples across diameter
- */
-export type N = number;
-/**
- * Start plane (mm)
- */
-export type Z1 = number;
-export type TessRings = number;
-export type TessSegments = number;
-export type PrimaryWavelength = number;
+export type Source = string;
 export type Conic = number;
 /**
  * Medium AFTER this surface
@@ -64,16 +44,108 @@ export type SemiDiameter = number;
  * Distance to next surface (mm)
  */
 export type Thickness = number;
+/**
+ * Sequential lenses/mirrors; last thickness = gap to next
+ */
 export type Surfaces = Surface[];
+/**
+ * Generic | Thorlabs | Edmund Optics | User | ...
+ */
+export type Vendor = string;
+export type Catalog = CatalogEntry[];
+export type Name2 = string;
+export type PartNumber1 = string;
+/**
+ * Contents of a Zemax .zmx file
+ */
+export type Text = string;
+export type Vendor1 = string;
+export type Bfl1 = number;
+export type Efl1 = number;
+/**
+ * Entrance pupil position relative to surface 0
+ */
+export type EnpZ = number;
+/**
+ * Exit pupil position relative to the image plane
+ */
+export type ExpZ = number;
+export type Fno1 = number;
+/**
+ * Paraxial image plane z (absolute)
+ */
+export type ImageZ = number;
+export type SurfaceZ = number[];
+export type Wavelength = number;
+export type Paraxial = ParaxialResult[];
+export type Kind1 = "epd";
+/**
+ * Entrance pupil diameter (mm)
+ */
+export type Value = number;
+/**
+ * Field angle in y-z plane (deg)
+ */
+export type Angle = number;
+export type Weight = number;
+export type Fields = FieldPoint[];
+export type Name3 = string;
+export type DeriveFromSequential = boolean;
+export type Bins = number;
+/**
+ * Optional (x, y, z); overrides z for posed detectors
+ */
+export type Center = number[] | null;
+export type HalfWidth = number;
+/**
+ * Optional plane normal; default +z
+ */
+export type Normal = number[] | null;
+/**
+ * None: image plane of the sequential system
+ */
+export type Z = number | null;
+export type ExtraSolids = Solid[];
+export type MaxEvents = number;
+/**
+ * Prune rays below this fraction of one launched ray weight
+ */
+export type MinWeight = number;
+export type Angle1 = number;
+export type BeamDiameter = number;
+export type Kind2 = "collimated_grid";
+/**
+ * Grid samples across diameter
+ */
+export type N = number;
+/**
+ * (x, y) centre of the grid in the start plane
+ */
+export type Offset = number[];
+/**
+ * Start plane (mm)
+ */
+export type Z1 = number;
+export type TessRings = number;
+export type TessSegments = number;
+export type PrimaryWavelength = number;
+export type Surfaces1 = Surface[];
 export type Um = number;
 export type Weight1 = number;
-export type Wavelengths = Wavelength[];
+export type Wavelengths = Wavelength1[];
+export type Analyses = ("layout" | "spot" | "rayfan" | "opd" | "mtf" | "irradiance")[];
+/**
+ * Place image plane at paraxial focus (primary λ)
+ */
+export type Autofocus = boolean;
+export type FanPoints = number;
+export type LayoutRays = number;
 export type PupilRings = number;
 export type Error = string | null;
-export type Id = string;
+export type Id1 = string;
 export type Message = string;
 export type Progress = number;
-export type ImageZ = number;
+export type ImageZ1 = number;
 export type Bins1 = number;
 export type Extent = number;
 export type GhostPaths = number;
@@ -83,7 +155,7 @@ export type NRaysLaunched = number;
 export type NTriangles = number;
 export type TotalPower = number;
 export type GlassAfter = string[];
-export type ImageZ1 = number;
+export type ImageZ2 = number;
 export type Field = number;
 export type Points = [number, number, number][];
 /**
@@ -92,12 +164,12 @@ export type Points = [number, number, number][];
  */
 export type Pupil = [number, number];
 export type Vignetted = boolean;
-export type Wavelength1 = number;
+export type Wavelength2 = number;
 export type Rays = LayoutRay[];
 export type SurfaceConic = number[];
 export type SurfaceRadius = number[];
 export type SurfaceSd = number[];
-export type SurfaceZ = number[];
+export type SurfaceZ1 = number[];
 export type Cutoff = number;
 export type DiffractionLimit = number[];
 export type Field1 = number;
@@ -107,33 +179,16 @@ export type Field1 = number;
 export type Freq = number[];
 export type Sagittal = number[];
 export type Tangential = number[];
-export type Wavelength2 = number;
+export type Wavelength3 = number;
 export type Mtf = MtfResult[];
 export type Field2 = number;
 export type N1 = number;
 export type OpdWaves = (number | null)[][];
 export type PvWaves = number;
 export type RmsWaves = number;
-export type Wavelength3 = number;
-export type Opd = OpdResult[];
-export type Bfl = number;
-export type Efl = number;
-/**
- * Entrance pupil position relative to surface 0
- */
-export type EnpZ = number;
-/**
- * Exit pupil position relative to the image plane
- */
-export type ExpZ = number;
-export type Fno = number;
-/**
- * Paraxial image plane z (absolute)
- */
-export type ImageZ2 = number;
-export type SurfaceZ1 = number[];
 export type Wavelength4 = number;
-export type Paraxial = ParaxialResult[];
+export type Opd = OpdResult[];
+export type Paraxial1 = ParaxialResult[];
 export type ExSagittal = (number | null)[];
 export type EyTangential = (number | null)[];
 export type Field3 = number;
@@ -160,21 +215,97 @@ export type State = "queued" | "running" | "done" | "cancelled" | "error";
  * Root used only to export a single JSON schema containing every public type.
  */
 export interface ApiSchema {
+  catalog: Catalog;
+  import_request: ImportRequest | null;
+  paraxial: Paraxial;
+  paraxial_request: ParaxialRequest | null;
   request: AnalysisRequest;
   status: JobStatus;
   system: SystemModel;
 }
 /**
  * This interface was referenced by `ApiSchema`'s JSON-Schema
- * via the `definition` "AnalysisRequest".
+ * via the `definition` "CatalogEntry".
  */
-export interface AnalysisRequest {
-  analyses: Analyses;
-  autofocus: Autofocus;
-  fan_points: FanPoints;
-  layout_rays: LayoutRays;
+export interface CatalogEntry {
+  bfl: Bfl;
+  category: Category;
+  diameter: Diameter;
+  efl: Efl;
+  fno: Fno;
+  glasses: Glasses;
+  id: Id;
+  kind: Kind;
+  name: Name;
+  part_number: PartNumber;
+  /**
+   * Prisms/fold mirrors: a non-sequential solid
+   */
+  solid: Solid | null;
+  source: Source;
+  surfaces: Surfaces;
+  vendor: Vendor;
+}
+/**
+ * Non-sequential solid (convex or not; triangles must be wound outward).
+ *
+ * ``triangles`` are refracting faces (glass of ``index``); ``mirror_triangles`` are fully reflective faces.
+ * The mesh is given in local coordinates and placed with ``rotation_deg`` (rx, ry, rz; applied as Rz·Ry·Rx)
+ * then ``position``.
+ *
+ * This interface was referenced by `ApiSchema`'s JSON-Schema
+ * via the `definition` "Solid".
+ */
+export interface Solid {
+  index: Index;
+  mirror_triangles: MirrorTriangles;
+  name: Name1;
+  position: Position;
+  rotation_deg: RotationDeg;
+  triangles: Triangles;
+}
+/**
+ * This interface was referenced by `ApiSchema`'s JSON-Schema
+ * via the `definition` "Surface".
+ */
+export interface Surface {
+  conic: Conic;
+  glass: Glass;
+  is_stop: IsStop;
+  radius: Radius;
+  semi_diameter: SemiDiameter;
+  thickness: Thickness;
+}
+/**
+ * This interface was referenced by `ApiSchema`'s JSON-Schema
+ * via the `definition` "ImportRequest".
+ */
+export interface ImportRequest {
+  name: Name2;
+  part_number: PartNumber1;
+  text: Text;
+  vendor: Vendor1;
+}
+/**
+ * This interface was referenced by `ApiSchema`'s JSON-Schema
+ * via the `definition` "ParaxialResult".
+ */
+export interface ParaxialResult {
+  bfl: Bfl1;
+  efl: Efl1;
+  enp_z: EnpZ;
+  exp_z: ExpZ;
+  fno: Fno1;
+  image_z: ImageZ;
+  surface_z: SurfaceZ;
+  wavelength: Wavelength;
+}
+/**
+ * This interface was referenced by `ApiSchema`'s JSON-Schema
+ * via the `definition` "ParaxialRequest".
+ */
+export interface ParaxialRequest {
   model: SystemModel;
-  pupil_rings: PupilRings;
 }
 /**
  * This interface was referenced by `ApiSchema`'s JSON-Schema
@@ -183,10 +314,10 @@ export interface AnalysisRequest {
 export interface SystemModel {
   aperture: Aperture;
   fields: Fields;
-  name: Name;
+  name: Name3;
   nonseq: NonSeq;
   primary_wavelength: PrimaryWavelength;
-  surfaces: Surfaces;
+  surfaces: Surfaces1;
   wavelengths: Wavelengths;
 }
 /**
@@ -194,7 +325,7 @@ export interface SystemModel {
  * via the `definition` "Aperture".
  */
 export interface Aperture {
-  kind: Kind;
+  kind: Kind1;
   value: Value;
 }
 /**
@@ -215,7 +346,7 @@ export interface NonSeq {
   extra_solids: ExtraSolids;
   max_events: MaxEvents;
   min_weight: MinWeight;
-  source: Source;
+  source: Source1;
   tess_rings: TessRings;
   tess_segments: TessSegments;
 }
@@ -225,50 +356,42 @@ export interface NonSeq {
  */
 export interface Detector {
   bins: Bins;
+  center: Center;
   half_width: HalfWidth;
+  normal: Normal;
   z: Z;
-}
-/**
- * Non-sequential solid. 'mesh' carries triangles (n,3,3) outward-wound, e.g. from STL.
- *
- * This interface was referenced by `ApiSchema`'s JSON-Schema
- * via the `definition` "Solid".
- */
-export interface Solid {
-  index: Index;
-  name: Name1;
-  triangles: Triangles;
 }
 /**
  * This interface was referenced by `ApiSchema`'s JSON-Schema
  * via the `definition` "Source".
  */
-export interface Source {
+export interface Source1 {
   angle: Angle1;
   beam_diameter: BeamDiameter;
-  kind: Kind1;
+  kind: Kind2;
   n: N;
+  offset: Offset;
   z: Z1;
-}
-/**
- * This interface was referenced by `ApiSchema`'s JSON-Schema
- * via the `definition` "Surface".
- */
-export interface Surface {
-  conic: Conic;
-  glass: Glass;
-  is_stop: IsStop;
-  radius: Radius;
-  semi_diameter: SemiDiameter;
-  thickness: Thickness;
 }
 /**
  * This interface was referenced by `ApiSchema`'s JSON-Schema
  * via the `definition` "Wavelength".
  */
-export interface Wavelength {
+export interface Wavelength1 {
   um: Um;
   weight: Weight1;
+}
+/**
+ * This interface was referenced by `ApiSchema`'s JSON-Schema
+ * via the `definition` "AnalysisRequest".
+ */
+export interface AnalysisRequest {
+  analyses: Analyses;
+  autofocus: Autofocus;
+  fan_points: FanPoints;
+  layout_rays: LayoutRays;
+  model: SystemModel;
+  pupil_rings: PupilRings;
 }
 /**
  * This interface was referenced by `ApiSchema`'s JSON-Schema
@@ -276,7 +399,7 @@ export interface Wavelength {
  */
 export interface JobStatus {
   error: Error;
-  id: Id;
+  id: Id1;
   message: Message;
   progress: Progress;
   result: AnalysisResult | null;
@@ -287,12 +410,12 @@ export interface JobStatus {
  * via the `definition` "AnalysisResult".
  */
 export interface AnalysisResult {
-  image_z: ImageZ;
+  image_z: ImageZ1;
   irradiance: IrradianceResult | null;
   layout: Layout | null;
   mtf: Mtf;
   opd: Opd;
-  paraxial: Paraxial;
+  paraxial: Paraxial1;
   rayfans: Rayfans;
   spots: Spots;
 }
@@ -316,12 +439,12 @@ export interface IrradianceResult {
  */
 export interface Layout {
   glass_after: GlassAfter;
-  image_z: ImageZ1;
+  image_z: ImageZ2;
   rays: Rays;
   surface_conic: SurfaceConic;
   surface_radius: SurfaceRadius;
   surface_sd: SurfaceSd;
-  surface_z: SurfaceZ;
+  surface_z: SurfaceZ1;
 }
 /**
  * This interface was referenced by `ApiSchema`'s JSON-Schema
@@ -332,7 +455,7 @@ export interface LayoutRay {
   points: Points;
   pupil: Pupil;
   vignetted: Vignetted;
-  wavelength: Wavelength1;
+  wavelength: Wavelength2;
 }
 /**
  * This interface was referenced by `ApiSchema`'s JSON-Schema
@@ -345,7 +468,7 @@ export interface MtfResult {
   freq: Freq;
   sagittal: Sagittal;
   tangential: Tangential;
-  wavelength: Wavelength2;
+  wavelength: Wavelength3;
 }
 /**
  * This interface was referenced by `ApiSchema`'s JSON-Schema
@@ -357,20 +480,6 @@ export interface OpdResult {
   opd_waves: OpdWaves;
   pv_waves: PvWaves;
   rms_waves: RmsWaves;
-  wavelength: Wavelength3;
-}
-/**
- * This interface was referenced by `ApiSchema`'s JSON-Schema
- * via the `definition` "ParaxialResult".
- */
-export interface ParaxialResult {
-  bfl: Bfl;
-  efl: Efl;
-  enp_z: EnpZ;
-  exp_z: ExpZ;
-  fno: Fno;
-  image_z: ImageZ2;
-  surface_z: SurfaceZ1;
   wavelength: Wavelength4;
 }
 /**
