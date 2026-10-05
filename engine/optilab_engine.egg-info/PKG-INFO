@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: optilab-engine
+Version: 0.1.0
+Summary: OptiLab optical engine: sequential + non-sequential tracing, FastAPI sidecar
+License: MIT
+Requires-Python: >=3.11
+Requires-Dist: numpy>=1.26
+Requires-Dist: pydantic>=2.6
+Requires-Dist: fastapi>=0.110
+Requires-Dist: uvicorn>=0.29
+Provides-Extra: dev
+Requires-Dist: pytest>=8; extra == "dev"
+Requires-Dist: httpx>=0.27; extra == "dev"
+Provides-Extra: build
+Requires-Dist: pyinstaller>=6; extra == "build"
