@@ -1,0 +1,954 @@
+{
+  "$defs": {
+    "AnalysisRequest": {
+      "properties": {
+        "analyses": {
+          "items": {
+            "enum": [
+              "layout",
+              "spot",
+              "rayfan",
+              "opd",
+              "mtf",
+              "irradiance"
+            ],
+            "type": "string"
+          },
+          "title": "Analyses",
+          "type": "array"
+        },
+        "autofocus": {
+          "default": true,
+          "description": "Place image plane at paraxial focus (primary \u03bb)",
+          "title": "Autofocus",
+          "type": "boolean"
+        },
+        "fan_points": {
+          "default": 41,
+          "maximum": 201,
+          "minimum": 5,
+          "title": "Fan Points",
+          "type": "integer"
+        },
+        "layout_rays": {
+          "default": 7,
+          "maximum": 41,
+          "minimum": 3,
+          "title": "Layout Rays",
+          "type": "integer"
+        },
+        "model": {
+          "$ref": "#/$defs/SystemModel"
+        },
+        "pupil_rings": {
+          "default": 8,
+          "maximum": 40,
+          "minimum": 2,
+          "title": "Pupil Rings",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "title": "AnalysisRequest",
+      "type": "object"
+    },
+    "AnalysisResult": {
+      "properties": {
+        "image_z": {
+          "default": 0.0,
+          "title": "Image Z",
+          "type": "number"
+        },
+        "irradiance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IrradianceResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "layout": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Layout"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "mtf": {
+          "items": {
+            "$ref": "#/$defs/MtfResult"
+          },
+          "title": "Mtf",
+          "type": "array"
+        },
+        "opd": {
+          "items": {
+            "$ref": "#/$defs/OpdResult"
+          },
+          "title": "Opd",
+          "type": "array"
+        },
+        "paraxial": {
+          "items": {
+            "$ref": "#/$defs/ParaxialResult"
+          },
+          "title": "Paraxial",
+          "type": "array"
+        },
+        "rayfans": {
+          "items": {
+            "$ref": "#/$defs/RayFanResult"
+          },
+          "title": "Rayfans",
+          "type": "array"
+        },
+        "spots": {
+          "items": {
+            "$ref": "#/$defs/SpotResult"
+          },
+          "title": "Spots",
+          "type": "array"
+        }
+      },
+      "title": "AnalysisResult",
+      "type": "object"
+    },
+    "Aperture": {
+      "properties": {
+        "kind": {
+          "const": "epd",
+          "default": "epd",
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "default": 10.0,
+          "description": "Entrance pupil diameter (mm)",
+          "exclusiveMinimum": 0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "title": "Aperture",
+      "type": "object"
+    },
+    "Detector": {
+      "properties": {
+        "bins": {
+          "default": 64,
+          "maximum": 512,
+          "minimum": 8,
+          "title": "Bins",
+          "type": "integer"
+        },
+        "half_width": {
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "title": "Half Width",
+          "type": "number"
+        },
+        "z": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None: image plane of the sequential system",
+          "title": "Z"
+        }
+      },
+      "title": "Detector",
+      "type": "object"
+    },
+    "FieldPoint": {
+      "properties": {
+        "angle": {
+          "default": 0.0,
+          "description": "Field angle in y-z plane (deg)",
+          "title": "Angle",
+          "type": "number"
+        },
+        "weight": {
+          "default": 1.0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "title": "FieldPoint",
+      "type": "object"
+    },
+    "IrradianceResult": {
+      "properties": {
+        "bins": {
+          "title": "Bins",
+          "type": "integer"
+        },
+        "extent": {
+          "title": "Extent",
+          "type": "number"
+        },
+        "ghost_paths": {
+          "title": "Ghost Paths",
+          "type": "integer"
+        },
+        "ghost_power_fraction": {
+          "title": "Ghost Power Fraction",
+          "type": "number"
+        },
+        "grid": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Grid",
+          "type": "array"
+        },
+        "n_rays_launched": {
+          "title": "N Rays Launched",
+          "type": "integer"
+        },
+        "n_triangles": {
+          "title": "N Triangles",
+          "type": "integer"
+        },
+        "total_power": {
+          "title": "Total Power",
+          "type": "number"
+        }
+      },
+      "required": [
+        "extent",
+        "bins",
+        "grid",
+        "total_power",
+        "ghost_paths",
+        "ghost_power_fraction",
+        "n_rays_launched",
+        "n_triangles"
+      ],
+      "title": "IrradianceResult",
+      "type": "object"
+    },
+    "JobStatus": {
+      "properties": {
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "message": {
+          "default": "",
+          "title": "Message",
+          "type": "string"
+        },
+        "progress": {
+          "default": 0.0,
+          "title": "Progress",
+          "type": "number"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AnalysisResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "running",
+            "done",
+            "cancelled",
+            "error"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "state"
+      ],
+      "title": "JobStatus",
+      "type": "object"
+    },
+    "Layout": {
+      "properties": {
+        "glass_after": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Glass After",
+          "type": "array"
+        },
+        "image_z": {
+          "title": "Image Z",
+          "type": "number"
+        },
+        "rays": {
+          "items": {
+            "$ref": "#/$defs/LayoutRay"
+          },
+          "title": "Rays",
+          "type": "array"
+        },
+        "surface_conic": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Surface Conic",
+          "type": "array"
+        },
+        "surface_radius": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Surface Radius",
+          "type": "array"
+        },
+        "surface_sd": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Surface Sd",
+          "type": "array"
+        },
+        "surface_z": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Surface Z",
+          "type": "array"
+        }
+      },
+      "required": [
+        "surface_z",
+        "surface_sd",
+        "surface_radius",
+        "surface_conic",
+        "glass_after",
+        "image_z",
+        "rays"
+      ],
+      "title": "Layout",
+      "type": "object"
+    },
+    "LayoutRay": {
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "integer"
+        },
+        "points": {
+          "items": {
+            "maxItems": 3,
+            "minItems": 3,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Points",
+          "type": "array"
+        },
+        "pupil": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Pupil",
+          "type": "array"
+        },
+        "vignetted": {
+          "title": "Vignetted",
+          "type": "boolean"
+        },
+        "wavelength": {
+          "title": "Wavelength",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "field",
+        "wavelength",
+        "pupil",
+        "points",
+        "vignetted"
+      ],
+      "title": "LayoutRay",
+      "type": "object"
+    },
+    "MtfResult": {
+      "properties": {
+        "cutoff": {
+          "title": "Cutoff",
+          "type": "number"
+        },
+        "diffraction_limit": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Diffraction Limit",
+          "type": "array"
+        },
+        "field": {
+          "title": "Field",
+          "type": "integer"
+        },
+        "freq": {
+          "description": "cycles/mm",
+          "items": {
+            "type": "number"
+          },
+          "title": "Freq",
+          "type": "array"
+        },
+        "sagittal": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Sagittal",
+          "type": "array"
+        },
+        "tangential": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Tangential",
+          "type": "array"
+        },
+        "wavelength": {
+          "title": "Wavelength",
+          "type": "number"
+        }
+      },
+      "required": [
+        "field",
+        "wavelength",
+        "freq",
+        "tangential",
+        "sagittal",
+        "diffraction_limit",
+        "cutoff"
+      ],
+      "title": "MtfResult",
+      "type": "object"
+    },
+    "NonSeq": {
+      "properties": {
+        "derive_from_sequential": {
+          "default": true,
+          "title": "Derive From Sequential",
+          "type": "boolean"
+        },
+        "detector": {
+          "$ref": "#/$defs/Detector"
+        },
+        "extra_solids": {
+          "items": {
+            "$ref": "#/$defs/Solid"
+          },
+          "title": "Extra Solids",
+          "type": "array"
+        },
+        "max_events": {
+          "default": 8,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Max Events",
+          "type": "integer"
+        },
+        "min_weight": {
+          "default": 0.001,
+          "description": "Prune rays below this fraction of one launched ray weight",
+          "exclusiveMinimum": 0,
+          "title": "Min Weight",
+          "type": "number"
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        },
+        "tess_rings": {
+          "default": 16,
+          "maximum": 64,
+          "minimum": 4,
+          "title": "Tess Rings",
+          "type": "integer"
+        },
+        "tess_segments": {
+          "default": 48,
+          "maximum": 180,
+          "minimum": 12,
+          "title": "Tess Segments",
+          "type": "integer"
+        }
+      },
+      "title": "NonSeq",
+      "type": "object"
+    },
+    "OpdResult": {
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "integer"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "opd_waves": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "title": "Opd Waves",
+          "type": "array"
+        },
+        "pv_waves": {
+          "title": "Pv Waves",
+          "type": "number"
+        },
+        "rms_waves": {
+          "title": "Rms Waves",
+          "type": "number"
+        },
+        "wavelength": {
+          "title": "Wavelength",
+          "type": "number"
+        }
+      },
+      "required": [
+        "field",
+        "wavelength",
+        "n",
+        "opd_waves",
+        "rms_waves",
+        "pv_waves"
+      ],
+      "title": "OpdResult",
+      "type": "object"
+    },
+    "ParaxialResult": {
+      "properties": {
+        "bfl": {
+          "title": "Bfl",
+          "type": "number"
+        },
+        "efl": {
+          "title": "Efl",
+          "type": "number"
+        },
+        "enp_z": {
+          "description": "Entrance pupil position relative to surface 0",
+          "title": "Enp Z",
+          "type": "number"
+        },
+        "exp_z": {
+          "description": "Exit pupil position relative to the image plane",
+          "title": "Exp Z",
+          "type": "number"
+        },
+        "fno": {
+          "title": "Fno",
+          "type": "number"
+        },
+        "image_z": {
+          "description": "Paraxial image plane z (absolute)",
+          "title": "Image Z",
+          "type": "number"
+        },
+        "surface_z": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Surface Z",
+          "type": "array"
+        },
+        "wavelength": {
+          "title": "Wavelength",
+          "type": "number"
+        }
+      },
+      "required": [
+        "wavelength",
+        "efl",
+        "bfl",
+        "fno",
+        "enp_z",
+        "exp_z",
+        "image_z",
+        "surface_z"
+      ],
+      "title": "ParaxialResult",
+      "type": "object"
+    },
+    "RayFanResult": {
+      "properties": {
+        "ex_sagittal": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Ex Sagittal",
+          "type": "array"
+        },
+        "ey_tangential": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Ey Tangential",
+          "type": "array"
+        },
+        "field": {
+          "title": "Field",
+          "type": "integer"
+        },
+        "pupil": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Pupil",
+          "type": "array"
+        },
+        "wavelength": {
+          "title": "Wavelength",
+          "type": "number"
+        }
+      },
+      "required": [
+        "field",
+        "wavelength",
+        "pupil",
+        "ey_tangential",
+        "ex_sagittal"
+      ],
+      "title": "RayFanResult",
+      "type": "object"
+    },
+    "Solid": {
+      "description": "Non-sequential solid. 'mesh' carries triangles (n,3,3) outward-wound, e.g. from STL.",
+      "properties": {
+        "index": {
+          "default": 1.5,
+          "minimum": 1.0,
+          "title": "Index",
+          "type": "number"
+        },
+        "name": {
+          "default": "solid",
+          "title": "Name",
+          "type": "string"
+        },
+        "triangles": {
+          "items": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "title": "Triangles",
+          "type": "array"
+        }
+      },
+      "title": "Solid",
+      "type": "object"
+    },
+    "Source": {
+      "properties": {
+        "angle": {
+          "default": 0.0,
+          "title": "Angle",
+          "type": "number"
+        },
+        "beam_diameter": {
+          "default": 10.0,
+          "exclusiveMinimum": 0,
+          "title": "Beam Diameter",
+          "type": "number"
+        },
+        "kind": {
+          "const": "collimated_grid",
+          "default": "collimated_grid",
+          "title": "Kind",
+          "type": "string"
+        },
+        "n": {
+          "default": 41,
+          "description": "Grid samples across diameter",
+          "maximum": 401,
+          "minimum": 3,
+          "title": "N",
+          "type": "integer"
+        },
+        "z": {
+          "default": -5.0,
+          "description": "Start plane (mm)",
+          "title": "Z",
+          "type": "number"
+        }
+      },
+      "title": "Source",
+      "type": "object"
+    },
+    "SpotResult": {
+      "properties": {
+        "chief": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Chief",
+          "type": "array"
+        },
+        "field": {
+          "title": "Field",
+          "type": "integer"
+        },
+        "geo_radius": {
+          "title": "Geo Radius",
+          "type": "number"
+        },
+        "n_traced": {
+          "title": "N Traced",
+          "type": "integer"
+        },
+        "n_vignetted": {
+          "title": "N Vignetted",
+          "type": "integer"
+        },
+        "rms_radius": {
+          "title": "Rms Radius",
+          "type": "number"
+        },
+        "wavelength": {
+          "title": "Wavelength",
+          "type": "number"
+        },
+        "x": {
+          "items": {
+            "type": "number"
+          },
+          "title": "X",
+          "type": "array"
+        },
+        "y": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Y",
+          "type": "array"
+        }
+      },
+      "required": [
+        "field",
+        "wavelength",
+        "x",
+        "y",
+        "chief",
+        "rms_radius",
+        "geo_radius",
+        "n_traced",
+        "n_vignetted"
+      ],
+      "title": "SpotResult",
+      "type": "object"
+    },
+    "Surface": {
+      "properties": {
+        "conic": {
+          "default": 0.0,
+          "title": "Conic",
+          "type": "number"
+        },
+        "glass": {
+          "default": "AIR",
+          "description": "Medium AFTER this surface",
+          "title": "Glass",
+          "type": "string"
+        },
+        "is_stop": {
+          "default": false,
+          "title": "Is Stop",
+          "type": "boolean"
+        },
+        "radius": {
+          "default": 0.0,
+          "description": "Vertex radius of curvature; 0 means flat",
+          "title": "Radius",
+          "type": "number"
+        },
+        "semi_diameter": {
+          "default": 10.0,
+          "exclusiveMinimum": 0,
+          "title": "Semi Diameter",
+          "type": "number"
+        },
+        "thickness": {
+          "default": 0.0,
+          "description": "Distance to next surface (mm)",
+          "title": "Thickness",
+          "type": "number"
+        }
+      },
+      "title": "Surface",
+      "type": "object"
+    },
+    "SystemModel": {
+      "properties": {
+        "aperture": {
+          "$ref": "#/$defs/Aperture"
+        },
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/FieldPoint"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "name": {
+          "default": "untitled",
+          "title": "Name",
+          "type": "string"
+        },
+        "nonseq": {
+          "$ref": "#/$defs/NonSeq"
+        },
+        "primary_wavelength": {
+          "default": 0,
+          "title": "Primary Wavelength",
+          "type": "integer"
+        },
+        "surfaces": {
+          "items": {
+            "$ref": "#/$defs/Surface"
+          },
+          "title": "Surfaces",
+          "type": "array"
+        },
+        "wavelengths": {
+          "items": {
+            "$ref": "#/$defs/Wavelength"
+          },
+          "title": "Wavelengths",
+          "type": "array"
+        }
+      },
+      "required": [
+        "surfaces"
+      ],
+      "title": "SystemModel",
+      "type": "object"
+    },
+    "Wavelength": {
+      "properties": {
+        "um": {
+          "default": 0.5876,
+          "exclusiveMinimum": 0,
+          "title": "Um",
+          "type": "number"
+        },
+        "weight": {
+          "default": 1.0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "title": "Wavelength",
+      "type": "object"
+    }
+  },
+  "description": "Root used only to export a single JSON schema containing every public type.",
+  "properties": {
+    "request": {
+      "$ref": "#/$defs/AnalysisRequest"
+    },
+    "status": {
+      "$ref": "#/$defs/JobStatus"
+    },
+    "system": {
+      "$ref": "#/$defs/SystemModel"
+    }
+  },
+  "required": [
+    "request",
+    "status",
+    "system"
+  ],
+  "title": "ApiSchema",
+  "type": "object"
+}

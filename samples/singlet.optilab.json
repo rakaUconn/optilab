@@ -1,0 +1,70 @@
+{
+  "name": "BK7 equiconvex singlet f≈49",
+  "surfaces": [
+    {
+      "radius": 50.0,
+      "thickness": 5.0,
+      "glass": "N-BK7",
+      "semi_diameter": 12.5,
+      "conic": 0.0,
+      "is_stop": true
+    },
+    {
+      "radius": -50.0,
+      "thickness": 47.536,
+      "glass": "AIR",
+      "semi_diameter": 12.5,
+      "conic": 0.0,
+      "is_stop": false
+    }
+  ],
+  "fields": [
+    {
+      "angle": 0.0,
+      "weight": 1.0
+    },
+    {
+      "angle": 3.0,
+      "weight": 1.0
+    }
+  ],
+  "wavelengths": [
+    {
+      "um": 0.5876,
+      "weight": 1.0
+    },
+    {
+      "um": 0.4861,
+      "weight": 0.5
+    },
+    {
+      "um": 0.6563,
+      "weight": 0.5
+    }
+  ],
+  "primary_wavelength": 0,
+  "aperture": {
+    "kind": "epd",
+    "value": 10.0
+  },
+  "nonseq": {
+    "derive_from_sequential": true,
+    "extra_solids": [],
+    "source": {
+      "kind": "collimated_grid",
+      "beam_diameter": 10.0,
+      "n": 41,
+      "angle": 0.0,
+      "z": -5.0
+    },
+    "detector": {
+      "z": null,
+      "half_width": 2.0,
+      "bins": 64
+    },
+    "max_events": 8,
+    "min_weight": 0.001,
+    "tess_rings": 16,
+    "tess_segments": 48
+  }
+}
