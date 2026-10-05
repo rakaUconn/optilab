@@ -62,7 +62,7 @@ class NonSeq(BaseModel):
     source: Source = Field(default_factory=Source)
     detector: Detector = Field(default_factory=Detector)
     max_events: int = Field(8, ge=1, le=20)
-    min_weight: float = Field(1e-5, gt=0)
+    min_weight: float = Field(1e-3, gt=0, description="Prune rays below this fraction of one launched ray weight")
     tess_rings: int = Field(16, ge=4, le=64)
     tess_segments: int = Field(48, ge=12, le=180)
 
