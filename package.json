@@ -1,0 +1,14 @@
+{
+  "name": "optilab",
+  "private": true,
+  "version": "0.1.0",
+  "description": "OptiLab monorepo: run `npm run tauri dev` from here",
+  "scripts": {
+    "setup": "python3 -m venv .venv && .venv/bin/pip install -e \"engine[dev]\" && npm --prefix apps/desktop install",
+    "tauri": "cd apps/desktop && npm run tauri --",
+    "dev": "cd apps/desktop && npm run dev",
+    "engine": "cd apps/desktop && npm run engine",
+    "test": "cd engine && ../.venv/bin/python -m pytest -q",
+    "gen": "python3 engine/scripts/export_schema.py && npm --prefix apps/desktop run gen:types"
+  }
+}
