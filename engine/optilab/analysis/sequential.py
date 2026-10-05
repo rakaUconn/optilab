@@ -128,7 +128,7 @@ def diffraction_limit(nu: np.ndarray) -> np.ndarray:
     return (2 / np.pi) * (np.arccos(nu) - nu * np.sqrt(1 - nu**2))
 
 
-def mtf(model, wl, par, fi, field_deg, n=65) -> MtfResult:
+def mtf(model, wl, par, fi, field_deg, n=97) -> MtfResult:
     """Monochromatic geometric-wavefront MTF: autocorrelation of the pupil function with real OPD."""
     g, ok = opd_grid(model, wl, par, field_deg, n)
     pupil = np.where(ok, np.exp(2j * np.pi * np.nan_to_num(g)), 0.0)

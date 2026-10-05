@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import threading
 import uuid
 
@@ -94,7 +95,7 @@ def main():
     ap.add_argument("--token", default=None)
     a = ap.parse_args()
     TOKEN = a.token
-    uvicorn.run(app, host=a.host, port=a.port, log_level="warning")
+    uvicorn.run(app, host=a.host, port=a.port, log_level=os.environ.get("OPTILAB_LOG_LEVEL", "warning"))
 
 
 if __name__ == "__main__":
