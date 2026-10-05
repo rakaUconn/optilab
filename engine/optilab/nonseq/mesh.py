@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ..glass import refractive_index
+from ..glass import is_mirror, refractive_index
 from ..models import SystemModel
 from ..paraxial import surface_positions
 
@@ -21,6 +21,7 @@ class Patch:
     n_front: float
     n_back: float
     name: str = ""
+    mirror: bool = False
 
 
 def sag(r: np.ndarray, radius: float, k: float) -> np.ndarray:
@@ -59,9 +60,16 @@ def derive_from_sequential(model: SystemModel, wl: float, rings: int, segs: int)
     zs = surface_positions(model)
     S = len(model.surfaces)
     patches: list[Patch] = []
-    n_after = [refractive_index(s.glass, wl) for s in model.surfaces]
+    n_after, cur = [], 1.0
+    for s in model.surfaces:
+        cur = cur if is_mirror(s.glass) else refractive_index(s.glass, wl)
+        n_after.append(cur)
     for i, s in enumerate(model.surfaces):
         n_before = 1.0 if i == 0 else n_after[i - 1]
+        if is_mirror(s.glass):
+            pts = _surface_grid(s.radius, s.conic, s.semi_diameter, zs[i], rings, segs)
+            patches.append(Patch(_grid_tris(pts, flip=False), n_before, n_before, f"mirror {i}", mirror=True))
+            continue
         if abs(n_before - n_after[i]) < 1e-12:
             continue  # dummy surface
         pts = _surface_grid(s.radius, s.conic, s.semi_diameter, zs[i], rings, segs)
@@ -69,7 +77,7 @@ def derive_from_sequential(model: SystemModel, wl: float, rings: int, segs: int)
         patches.append(Patch(_grid_tris(pts, flip=False), n_before, n_after[i], f"surface {i}"))
     i = 0
     while i < S:
-        if n_after[i] > 1.0 + 1e-12 and i + 1 < S:
+        if n_after[i] > 1.0 + 1e-12 and i + 1 < S and not is_mirror(model.surfaces[i + 1].glass):
             f, b = model.surfaces[i], model.surfaces[i + 1]
             F = _surface_grid(f.radius, f.conic, f.semi_diameter, zs[i], 1, segs)[-1]
             B = _surface_grid(b.radius, b.conic, b.semi_diameter, zs[i + 1], 1, segs)[-1]
@@ -97,3 +105,21 @@ def load_stl(data: bytes) -> np.ndarray:
     n = struct.unpack("<I", data[80:84])[0]
     dt = np.dtype([("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")])
     return np.frombuffer(data, dtype=dt, count=n, offset=84)["v"].astype(float)
+
+
+def rotation_matrix(rx: float, ry: float, rz: float) -> np.ndarray:
+    """R = Rz · Ry · Rx, angles in degrees."""
+    a, b, c = np.radians([rx, ry, rz])
+    ca, sa, cb, sb, cc, sc = np.cos(a), np.sin(a), np.cos(b), np.sin(b), np.cos(c), np.sin(c)
+    Rx = np.array([[1, 0, 0], [0, ca, -sa], [0, sa, ca]])
+    Ry = np.array([[cb, 0, sb], [0, 1, 0], [-sb, 0, cb]])
+    Rz = np.array([[cc, -sc, 0], [sc, cc, 0], [0, 0, 1]])
+    return Rz @ Ry @ Rx
+
+
+def pose(tris: np.ndarray, position, rotation_deg) -> np.ndarray:
+    """Apply the solid pose to (T, 3, 3) local-coordinate triangles. Proper rotations keep outward winding."""
+    if len(tris) == 0:
+        return tris
+    R = rotation_matrix(*rotation_deg)
+    return tris @ R.T + np.asarray(position, float)

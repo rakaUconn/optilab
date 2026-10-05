@@ -3,13 +3,17 @@ from __future__ import annotations
 
 import numpy as np
 
-from .glass import refractive_index
+from .glass import is_mirror, refractive_index
 from .models import ParaxialResult, SystemModel
 
 
 def media(model: SystemModel, wl: float) -> list[float]:
-    """Index after each surface."""
-    return [refractive_index(s.glass, wl) for s in model.surfaces]
+    """Signed index after each surface (Welford convention: the sign flips after every mirror)."""
+    out, cur = [], 1.0
+    for s in model.surfaces:
+        cur = -cur if is_mirror(s.glass) else (1.0 if cur > 0 else -1.0) * refractive_index(s.glass, wl)
+        out.append(cur)
+    return out
 
 
 def surface_positions(model: SystemModel) -> list[float]:
@@ -52,7 +56,8 @@ def solve(model: SystemModel, wl: float | None = None) -> ParaxialResult:
         efl = bfl = float("inf")
         image_z = zs[-1] + model.surfaces[-1].thickness
     else:
-        efl = -h / u
+        n_last = media(model, wl)[-1]
+        efl = -h / (n_last * u)
         bfl = -y / u
         image_z = zs[-1] + bfl
     stop = model.stop_index

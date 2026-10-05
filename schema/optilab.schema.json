@@ -160,6 +160,137 @@
       "title": "Aperture",
       "type": "object"
     },
+    "CatalogEntry": {
+      "properties": {
+        "bfl": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bfl"
+        },
+        "category": {
+          "default": "lens",
+          "enum": [
+            "lens",
+            "mirror",
+            "prism"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "diameter": {
+          "description": "Clear outer dimension (mm)",
+          "title": "Diameter",
+          "type": "number"
+        },
+        "efl": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Efl"
+        },
+        "fno": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fno"
+        },
+        "glasses": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Glasses",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "other",
+          "description": "plano-convex, bi-convex, doublet, concave-mirror, right-angle-prism, ...",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "part_number": {
+          "default": "",
+          "title": "Part Number",
+          "type": "string"
+        },
+        "solid": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Solid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Prisms/fold mirrors: a non-sequential solid"
+        },
+        "source": {
+          "default": "",
+          "description": "how the prescription was obtained",
+          "title": "Source",
+          "type": "string"
+        },
+        "surfaces": {
+          "description": "Sequential lenses/mirrors; last thickness = gap to next",
+          "items": {
+            "$ref": "#/$defs/Surface"
+          },
+          "title": "Surfaces",
+          "type": "array"
+        },
+        "vendor": {
+          "default": "Generic",
+          "description": "Generic | Thorlabs | Edmund Optics | User | ...",
+          "title": "Vendor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "vendor",
+        "part_number",
+        "category",
+        "kind",
+        "source",
+        "diameter",
+        "efl",
+        "bfl",
+        "fno",
+        "glasses",
+        "surfaces",
+        "solid"
+      ],
+      "title": "CatalogEntry",
+      "type": "object"
+    },
     "Detector": {
       "properties": {
         "bins": {
@@ -169,11 +300,43 @@
           "title": "Bins",
           "type": "integer"
         },
+        "center": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional (x, y, z); overrides z for posed detectors",
+          "title": "Center"
+        },
         "half_width": {
           "default": 2.0,
           "exclusiveMinimum": 0,
           "title": "Half Width",
           "type": "number"
+        },
+        "normal": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional plane normal; default +z",
+          "title": "Normal"
         },
         "z": {
           "anyOf": [
@@ -191,6 +354,8 @@
       },
       "required": [
         "z",
+        "center",
+        "normal",
         "half_width",
         "bins"
       ],
@@ -216,6 +381,38 @@
         "weight"
       ],
       "title": "FieldPoint",
+      "type": "object"
+    },
+    "ImportRequest": {
+      "properties": {
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        },
+        "part_number": {
+          "default": "",
+          "title": "Part Number",
+          "type": "string"
+        },
+        "text": {
+          "description": "Contents of a Zemax .zmx file",
+          "title": "Text",
+          "type": "string"
+        },
+        "vendor": {
+          "default": "Imported",
+          "title": "Vendor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "vendor",
+        "part_number",
+        "name"
+      ],
+      "title": "ImportRequest",
       "type": "object"
     },
     "IrradianceResult": {
@@ -623,6 +820,18 @@
       "title": "OpdResult",
       "type": "object"
     },
+    "ParaxialRequest": {
+      "properties": {
+        "model": {
+          "$ref": "#/$defs/SystemModel"
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "title": "ParaxialRequest",
+      "type": "object"
+    },
     "ParaxialResult": {
       "properties": {
         "bfl": {
@@ -734,18 +943,52 @@
       "type": "object"
     },
     "Solid": {
-      "description": "Non-sequential solid. 'mesh' carries triangles (n,3,3) outward-wound, e.g. from STL.",
+      "description": "Non-sequential solid (convex or not; triangles must be wound outward).\n\n``triangles`` are refracting faces (glass of ``index``); ``mirror_triangles`` are fully reflective faces.\nThe mesh is given in local coordinates and placed with ``rotation_deg`` (rx, ry, rz; applied as Rz\u00b7Ry\u00b7Rx)\nthen ``position``.",
       "properties": {
         "index": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
           "default": 1.5,
-          "minimum": 1.0,
-          "title": "Index",
-          "type": "number"
+          "description": "Constant index or a glass name",
+          "title": "Index"
+        },
+        "mirror_triangles": {
+          "items": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "title": "Mirror Triangles",
+          "type": "array"
         },
         "name": {
           "default": "solid",
           "title": "Name",
           "type": "string"
+        },
+        "position": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Position",
+          "type": "array"
+        },
+        "rotation_deg": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Rotation Deg",
+          "type": "array"
         },
         "triangles": {
           "items": {
@@ -764,7 +1007,10 @@
       "required": [
         "name",
         "index",
-        "triangles"
+        "triangles",
+        "mirror_triangles",
+        "position",
+        "rotation_deg"
       ],
       "title": "Solid",
       "type": "object"
@@ -796,6 +1042,14 @@
           "title": "N",
           "type": "integer"
         },
+        "offset": {
+          "description": "(x, y) centre of the grid in the start plane",
+          "items": {
+            "type": "number"
+          },
+          "title": "Offset",
+          "type": "array"
+        },
         "z": {
           "default": -5.0,
           "description": "Start plane (mm)",
@@ -808,7 +1062,8 @@
         "beam_diameter",
         "n",
         "angle",
-        "z"
+        "z",
+        "offset"
       ],
       "title": "Source",
       "type": "object"
@@ -1006,6 +1261,42 @@
   },
   "description": "Root used only to export a single JSON schema containing every public type.",
   "properties": {
+    "catalog": {
+      "items": {
+        "$ref": "#/$defs/CatalogEntry"
+      },
+      "title": "Catalog",
+      "type": "array"
+    },
+    "import_request": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ImportRequest"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "paraxial": {
+      "items": {
+        "$ref": "#/$defs/ParaxialResult"
+      },
+      "title": "Paraxial",
+      "type": "array"
+    },
+    "paraxial_request": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ParaxialRequest"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "request": {
       "$ref": "#/$defs/AnalysisRequest"
     },
@@ -1019,7 +1310,11 @@
   "required": [
     "request",
     "status",
-    "system"
+    "system",
+    "catalog",
+    "import_request",
+    "paraxial_request",
+    "paraxial"
   ],
   "title": "ApiSchema",
   "type": "object"

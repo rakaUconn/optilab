@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .glass import refractive_index
+from .glass import is_mirror, refractive_index
 from .models import SystemModel
 from .paraxial import surface_positions
 
@@ -54,9 +54,11 @@ def _intersect(o: np.ndarray, d: np.ndarray, radius: float, k: float) -> tuple[n
         t1 = q / a
         t2 = c / q
         t0 = -o[:, 2] / d[:, 2]  # intersection with the vertex plane: pick root nearest to it
-    t1 = np.where(np.isfinite(t1), t1, t0)
-    t2 = np.where(np.isfinite(t2), t2, t0)
-    t0 = np.where(np.isfinite(t0), t0, 0.0)
+    # a == 0 (e.g. an on-axis ray on a paraboloid): the quadratic degenerates to a linear equation whose
+    # root is t2; likewise t2 is undefined when q == 0
+    f1, f2 = np.isfinite(t1), np.isfinite(t2)
+    t1, t2 = np.where(f1, t1, t2), np.where(f2, t2, t1)
+    t0 = np.where(np.isfinite(t0), t0, np.where(np.isfinite(t1), t1, 0.0))
     t = np.where(np.abs(t1 - t0) <= np.abs(t2 - t0), t1, t2)
     return t, ok
 
@@ -96,7 +98,8 @@ def trace(model: SystemModel, wl: float, o: np.ndarray, d: np.ndarray, image_z: 
     o = o.copy()
     d = d.copy()
     for i, s in enumerate(model.surfaces):
-        n_after = refractive_index(s.glass, wl)
+        mirror = is_mirror(s.glass)
+        n_after = n_before if mirror else refractive_index(s.glass, wl)
         ol = o - np.array([0.0, 0.0, zs[i]])
         t, ok = _intersect(ol, d, s.radius, s.conic)
         valid &= ok
@@ -108,11 +111,14 @@ def trace(model: SystemModel, wl: float, o: np.ndarray, d: np.ndarray, image_z: 
         cos_i = -np.einsum("ij,ij->i", nrm, d)
         nrm = np.where((cos_i < 0)[:, None], -nrm, nrm)
         cos_i = np.abs(cos_i)
-        mu = n_before / n_after
-        kk = 1.0 - mu * mu * (1.0 - cos_i * cos_i)
-        valid &= kk >= 0  # TIR
-        root = np.sqrt(np.where(kk >= 0, kk, 0.0))
-        d = mu * d + (mu * cos_i - root)[:, None] * nrm
+        if mirror:
+            d = d + 2.0 * cos_i[:, None] * nrm
+        else:
+            mu = n_before / n_after
+            kk = 1.0 - mu * mu * (1.0 - cos_i * cos_i)
+            valid &= kk >= 0  # TIR
+            root = np.sqrt(np.where(kk >= 0, kk, 0.0))
+            d = mu * d + (mu * cos_i - root)[:, None] * nrm
         d /= np.linalg.norm(d, axis=1, keepdims=True)
         o = p + np.array([0.0, 0.0, zs[i]])
         pos[:, i + 1] = o

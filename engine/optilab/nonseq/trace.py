@@ -5,7 +5,8 @@ import numpy as np
 
 from ..models import IrradianceResult, SystemModel
 from ..paraxial import solve
-from .mesh import Patch, derive_from_sequential
+from ..glass import refractive_index
+from .mesh import Patch, derive_from_sequential, pose
 
 EPS = 1e-9
 
@@ -58,18 +59,32 @@ def run(model: SystemModel, progress=lambda f, m="": None, check=lambda: None) -
     if ns.derive_from_sequential:
         patches += derive_from_sequential(model, wl, ns.tess_rings, ns.tess_segments)
     for sol in ns.extra_solids:
-        patches.append(Patch(np.array(sol.triangles, dtype=float).reshape(-1, 3, 3), 1.0, sol.index, sol.name))
+        n_sol = float(sol.index) if isinstance(sol.index, (int, float)) else refractive_index(str(sol.index), wl)
+        glass = np.array(sol.triangles, dtype=float).reshape(-1, 3, 3)
+        mirr = np.array(sol.mirror_triangles, dtype=float).reshape(-1, 3, 3)
+        if len(glass):
+            patches.append(Patch(pose(glass, sol.position, sol.rotation_deg), 1.0, n_sol, sol.name))
+        if len(mirr):
+            patches.append(Patch(pose(mirr, sol.position, sol.rotation_deg), 1.0, 1.0, sol.name + " (mirror)", mirror=True))
     tris = np.concatenate([p.tris for p in patches]) if patches else np.zeros((0, 3, 3))
     nf = np.concatenate([np.full(len(p.tris), p.n_front) for p in patches]) if patches else np.zeros(0)
     nb = np.concatenate([np.full(len(p.tris), p.n_back) for p in patches]) if patches else np.zeros(0)
     v0 = tris[:, 0]
     e0 = tris[:, 1] - v0
     e1 = tris[:, 2] - v0
+    mir = np.concatenate([np.full(len(p.tris), p.mirror) for p in patches]) if patches else np.zeros(0, bool)
     nrm = np.cross(e0, e1)
     nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-300)
 
     det = ns.detector
     det_z = par.image_z if det.z is None else det.z
+    d_n = np.array(det.normal if det.normal is not None else [0.0, 0.0, 1.0], float)
+    d_n /= np.linalg.norm(d_n)
+    d_c = np.array(det.center if det.center is not None else [0.0, 0.0, det_z], float)
+    up = np.array([0.0, 1.0, 0.0]) if abs(d_n[1]) < 0.99 else np.array([1.0, 0.0, 0.0])
+    d_u = np.cross(up, d_n)
+    d_u /= np.linalg.norm(d_u)
+    d_v = np.cross(d_n, d_u)
     # source
     src = ns.source
     g = np.linspace(-1, 1, src.n)
@@ -78,7 +93,7 @@ def run(model: SystemModel, progress=lambda f, m="": None, check=lambda: None) -
     th = np.radians(src.angle)
     d0 = np.array([0.0, np.sin(th), np.cos(th)])
     r = src.beam_diameter / 2
-    o = np.stack([gx.ravel() * r, gy.ravel() * r, np.full(gx.size, src.z)], axis=1)[inside]
+    o = np.stack([gx.ravel() * r + src.offset[0], gy.ravel() * r + src.offset[1], np.full(gx.size, src.z)], axis=1)[inside]
     n_launch = len(o)
     d = np.tile(d0, (n_launch, 1))
     w = np.full(n_launch, 1.0 / n_launch)
@@ -99,13 +114,13 @@ def run(model: SystemModel, progress=lambda f, m="": None, check=lambda: None) -
             break
         t_obj, ti = _intersect(o, d, e0, e1, v0, check) if len(tris) else (np.full(len(o), np.inf), np.full(len(o), -1))
         with np.errstate(divide="ignore", invalid="ignore"):
-            t_det = (det_z - o[:, 2]) / d[:, 2]
+            t_det = ((d_c - o) @ d_n) / (d @ d_n)
         t_det = np.where(t_det > EPS, t_det, np.inf)
         to_det = np.isfinite(t_det) & (t_det < t_obj)
         if to_det.any():
-            p = o[to_det] + t_det[to_det, None] * d[to_det]
-            ix = np.floor((p[:, 0] + hw) / (2 * hw) * bins).astype(int)
-            iy = np.floor((p[:, 1] + hw) / (2 * hw) * bins).astype(int)
+            p = o[to_det] + t_det[to_det, None] * d[to_det] - d_c
+            ix = np.floor((p @ d_u + hw) / (2 * hw) * bins).astype(int)
+            iy = np.floor((p @ d_v + hw) / (2 * hw) * bins).astype(int)
             m = (ix >= 0) & (ix < bins) & (iy >= 0) & (iy < bins)
             np.add.at(grid, (iy[m], ix[m]), w[to_det][m])
             total += float(w[to_det][m].sum())
@@ -126,6 +141,9 @@ def run(model: SystemModel, progress=lambda f, m="": None, check=lambda: None) -
         Nf = np.where(entering[:, None], N, -N)  # normal opposing the ray
         cos_i = np.abs(cos_s)
         R, cos_t, tir = fresnel_unpolarised(cos_i, n1, n2)
+        is_m = mir[idx]
+        R = np.where(is_m, 1.0, R)   # mirror faces reflect everything, from either side
+        tir = tir | is_m
         mu = n1 / n2
         # reflected
         dr = dh + 2.0 * cos_i[:, None] * Nf
@@ -139,7 +157,8 @@ def run(model: SystemModel, progress=lambda f, m="": None, check=lambda: None) -
         d = np.concatenate([dr[keep_r], dt[keep_t]])
         w = np.concatenate([(wh * R)[keep_r], (wh * (1 - R))[keep_t]])
         nmed = np.concatenate([n1[keep_r], n2[keep_t]])
-        nref = np.concatenate([nr[keep_r] + 1, nr[keep_t]])
+        # only partial (Fresnel) reflections create ghosts; mirrors and total internal reflection are intended paths
+        nref = np.concatenate([(nr + (~tir).astype(int))[keep_r], nr[keep_t]])
     progress(1.0, "done")
     cell = (2 * hw / bins) ** 2
     return IrradianceResult(

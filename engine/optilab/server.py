@@ -11,7 +11,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import __version__
 from .glass import list_glasses
-from .models import AnalysisRequest, JobStatus
+from .catalog import entry_from_zmx, generic_catalog
+from .models import AnalysisRequest, CatalogEntry, ImportRequest, JobStatus, ParaxialRequest, ParaxialResult
+from .paraxial import solve
 from .service import Cancelled, run_analysis
 
 TOKEN: str | None = None
@@ -38,6 +40,28 @@ def health():
 @app.get("/glasses", dependencies=[Depends(_auth)])
 def glasses():
     return list_glasses()
+
+
+@app.get("/catalog", response_model=list[CatalogEntry], dependencies=[Depends(_auth)])
+def catalog():
+    return list(generic_catalog())
+
+
+@app.post("/catalog/import", response_model=CatalogEntry, dependencies=[Depends(_auth)])
+def catalog_import(req: ImportRequest):
+    try:
+        return entry_from_zmx(req.text, req.vendor, req.part_number, req.name)
+    except (ValueError, IndexError, KeyError) as e:
+        raise HTTPException(422, f"cannot import: {e}") from e
+
+
+@app.post("/paraxial", response_model=list[ParaxialResult], dependencies=[Depends(_auth)])
+def paraxial(req: ParaxialRequest):
+    """Quick first-order numbers (per wavelength) for the lens editor."""
+    try:
+        return [solve(req.model, w.um) for w in req.model.wavelengths]
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from e
 
 
 @app.post("/jobs", response_model=JobStatus, dependencies=[Depends(_auth)])

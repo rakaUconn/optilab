@@ -41,10 +41,18 @@ class Aperture(Base):
 
 
 class Solid(Base):
-    """Non-sequential solid. 'mesh' carries triangles (n,3,3) outward-wound, e.g. from STL."""
+    """Non-sequential solid (convex or not; triangles must be wound outward).
+
+    ``triangles`` are refracting faces (glass of ``index``); ``mirror_triangles`` are fully reflective faces.
+    The mesh is given in local coordinates and placed with ``rotation_deg`` (rx, ry, rz; applied as Rz·Ry·Rx)
+    then ``position``.
+    """
     name: str = "solid"
-    index: float = Field(1.5, ge=1.0)
+    index: float | str = Field(1.5, description="Constant index or a glass name")
     triangles: list[list[list[float]]] = Field(default_factory=list)
+    mirror_triangles: list[list[list[float]]] = Field(default_factory=list)
+    position: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0])
+    rotation_deg: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0])
 
 
 class Source(Base):
@@ -53,10 +61,13 @@ class Source(Base):
     n: int = Field(41, ge=3, le=401, description="Grid samples across diameter")
     angle: float = 0.0
     z: float = Field(-5.0, description="Start plane (mm)")
+    offset: list[float] = Field(default_factory=lambda: [0.0, 0.0], description="(x, y) centre of the grid in the start plane")
 
 
 class Detector(Base):
     z: float | None = Field(None, description="None: image plane of the sequential system")
+    center: list[float] | None = Field(None, description="Optional (x, y, z); overrides z for posed detectors")
+    normal: list[float] | None = Field(None, description="Optional plane normal; default +z")
     half_width: float = Field(2.0, gt=0)
     bins: int = Field(64, ge=8, le=512)
 
@@ -211,8 +222,42 @@ class JobStatus(Base):
     error: str | None = None
 
 
+# ---------------- lens catalogue ----------------
+
+class CatalogEntry(Base):
+    id: str
+    name: str
+    vendor: str = Field("Generic", description="Generic | Thorlabs | Edmund Optics | User | ...")
+    part_number: str = ""
+    category: Literal["lens", "mirror", "prism"] = "lens"
+    kind: str = Field("other", description="plano-convex, bi-convex, doublet, concave-mirror, right-angle-prism, ...")
+    source: str = Field("", description="how the prescription was obtained")
+    diameter: float = Field(description="Clear outer dimension (mm)")
+    efl: float | None = None
+    bfl: float | None = None
+    fno: float | None = None
+    glasses: list[str] = Field(default_factory=list)
+    surfaces: list[Surface] = Field(default_factory=list, description="Sequential lenses/mirrors; last thickness = gap to next")
+    solid: Solid | None = Field(None, description="Prisms/fold mirrors: a non-sequential solid")
+
+
+class ImportRequest(Base):
+    text: str = Field(description="Contents of a Zemax .zmx file")
+    vendor: str = "Imported"
+    part_number: str = ""
+    name: str = ""
+
+
+class ParaxialRequest(Base):
+    model: SystemModel
+
+
 class ApiSchema(Base):
     """Root used only to export a single JSON schema containing every public type."""
     request: AnalysisRequest
     status: JobStatus
     system: SystemModel
+    catalog: list[CatalogEntry] = Field(default_factory=list)
+    import_request: ImportRequest | None = None
+    paraxial_request: ParaxialRequest | None = None
+    paraxial: list[ParaxialResult] = Field(default_factory=list)

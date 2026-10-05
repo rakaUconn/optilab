@@ -18,13 +18,37 @@ ALIASES = {"BK7": "N-BK7", "SF5": "N-SF5", "SILICA": "FUSED_SILICA", "FS": "FUSE
            "N-F2": "F2", "FUSEDSILICA": "FUSED_SILICA"}
 AIR_NAMES = {"", "AIR", "VACUUM"}
 
+# Approximate "model glasses" (nd at 587.6 nm, Abbe Vd) for common catalogue glasses without Sellmeier data.
+# Dispersion is a two-term Cauchy fit through nd and Vd: accurate near the visible, not a substitute for the
+# manufacturer's coefficients.
+MODEL_GLASSES: dict[str, tuple[float, float]] = {
+    "N-BAK1": (1.57250, 57.55), "N-BAK4": (1.56883, 55.98), "N-SK4": (1.61272, 58.63),
+    "N-SK16": (1.62041, 60.32), "N-BAF4": (1.60568, 43.72), "N-BAF10": (1.67003, 47.11),
+    "N-LAK8": (1.71300, 53.83), "N-LAK9": (1.69100, 54.71), "N-LAK22": (1.65113, 55.89),
+    "N-LAF2": (1.74397, 44.85), "N-SF8": (1.68894, 31.31), "N-SF10": (1.72825, 28.53),
+    "N-SF11": (1.78472, 25.68), "N-SF6": (1.80518, 25.36), "SF2": (1.64769, 33.85),
+    "SF10": (1.72825, 28.53), "SF11": (1.78472, 25.68), "N-F2": (1.62004, 36.37),
+    "CAF2": (1.43385, 94.99), "SAPPHIRE": (1.76820, 72.2),
+}
+_LF, _LC, _LD = 0.4861, 0.6563, 0.5876
+
+
+def model_index(nd: float, vd: float, wavelength_um: float) -> float:
+    b = (nd - 1.0) / vd / (1 / _LF**2 - 1 / _LC**2)
+    a = nd - b / _LD**2
+    return a + b / wavelength_um**2
+
+
+def is_mirror(glass: str) -> bool:
+    return glass.strip().upper() in {"MIRROR", "MIRR"}
+
 
 def is_air(glass: str) -> bool:
     return glass.strip().upper() in AIR_NAMES
 
 
 def list_glasses() -> list[str]:
-    return ["AIR", *SELLMEIER.keys()]
+    return ["AIR", *SELLMEIER.keys(), *MODEL_GLASSES.keys()]
 
 
 def refractive_index(glass: str, wavelength_um: float) -> float:
@@ -38,6 +62,11 @@ def refractive_index(glass: str, wavelength_um: float) -> float:
         l2 = wavelength_um**2
         n2 = 1.0 + b1 * l2 / (l2 - c1) + b2 * l2 / (l2 - c2) + b3 * l2 / (l2 - c3)
         return float(np.sqrt(n2))
+    if g in MODEL_GLASSES:
+        return model_index(*MODEL_GLASSES[g], wavelength_um)
+    if "/" in g:  # "nd/Vd" model glass, e.g. "1.6700/47.1"
+        nd, vd = (float(x) for x in g.split("/"))
+        return model_index(nd, vd, wavelength_um)
     try:
         n = float(glass)
     except ValueError as e:
