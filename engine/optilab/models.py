@@ -8,10 +8,15 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-class Surface(BaseModel):
+class Base(BaseModel):
+    # defaults are always present on the wire -> required in the generated TS types
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
+
+class Surface(Base):
     radius: float = Field(0.0, description="Vertex radius of curvature; 0 means flat")
     thickness: float = Field(0.0, description="Distance to next surface (mm)")
     glass: str = Field("AIR", description="Medium AFTER this surface")
@@ -20,29 +25,29 @@ class Surface(BaseModel):
     is_stop: bool = False
 
 
-class FieldPoint(BaseModel):
+class FieldPoint(Base):
     angle: float = Field(0.0, description="Field angle in y-z plane (deg)")
     weight: float = 1.0
 
 
-class Wavelength(BaseModel):
+class Wavelength(Base):
     um: float = Field(0.5876, gt=0)
     weight: float = 1.0
 
 
-class Aperture(BaseModel):
+class Aperture(Base):
     kind: Literal["epd"] = "epd"
     value: float = Field(10.0, gt=0, description="Entrance pupil diameter (mm)")
 
 
-class Solid(BaseModel):
+class Solid(Base):
     """Non-sequential solid. 'mesh' carries triangles (n,3,3) outward-wound, e.g. from STL."""
     name: str = "solid"
     index: float = Field(1.5, ge=1.0)
     triangles: list[list[list[float]]] = Field(default_factory=list)
 
 
-class Source(BaseModel):
+class Source(Base):
     kind: Literal["collimated_grid"] = "collimated_grid"
     beam_diameter: float = Field(10.0, gt=0)
     n: int = Field(41, ge=3, le=401, description="Grid samples across diameter")
@@ -50,13 +55,13 @@ class Source(BaseModel):
     z: float = Field(-5.0, description="Start plane (mm)")
 
 
-class Detector(BaseModel):
+class Detector(Base):
     z: float | None = Field(None, description="None: image plane of the sequential system")
     half_width: float = Field(2.0, gt=0)
     bins: int = Field(64, ge=8, le=512)
 
 
-class NonSeq(BaseModel):
+class NonSeq(Base):
     derive_from_sequential: bool = True
     extra_solids: list[Solid] = Field(default_factory=list)
     source: Source = Field(default_factory=Source)
@@ -67,7 +72,7 @@ class NonSeq(BaseModel):
     tess_segments: int = Field(48, ge=12, le=180)
 
 
-class SystemModel(BaseModel):
+class SystemModel(Base):
     name: str = "untitled"
     surfaces: list[Surface]
     fields: list[FieldPoint] = Field(default_factory=lambda: [FieldPoint()])
@@ -96,7 +101,7 @@ class SystemModel(BaseModel):
 
 # ---------------- results ----------------
 
-class ParaxialResult(BaseModel):
+class ParaxialResult(Base):
     wavelength: float
     efl: float
     bfl: float
@@ -107,7 +112,7 @@ class ParaxialResult(BaseModel):
     surface_z: list[float]
 
 
-class Layout(BaseModel):
+class Layout(Base):
     surface_z: list[float]
     surface_sd: list[float]
     surface_radius: list[float]
@@ -117,7 +122,7 @@ class Layout(BaseModel):
     rays: list["LayoutRay"]
 
 
-class LayoutRay(BaseModel):
+class LayoutRay(Base):
     field: int
     wavelength: int
     pupil: tuple[float, float]
@@ -125,7 +130,7 @@ class LayoutRay(BaseModel):
     vignetted: bool
 
 
-class SpotResult(BaseModel):
+class SpotResult(Base):
     field: int
     wavelength: float
     x: list[float]
@@ -137,7 +142,7 @@ class SpotResult(BaseModel):
     n_vignetted: int
 
 
-class RayFanResult(BaseModel):
+class RayFanResult(Base):
     field: int
     wavelength: float
     pupil: list[float]
@@ -145,7 +150,7 @@ class RayFanResult(BaseModel):
     ex_sagittal: list[float | None]
 
 
-class OpdResult(BaseModel):
+class OpdResult(Base):
     field: int
     wavelength: float
     n: int
@@ -154,7 +159,7 @@ class OpdResult(BaseModel):
     pv_waves: float
 
 
-class MtfResult(BaseModel):
+class MtfResult(Base):
     field: int
     wavelength: float
     freq: list[float] = Field(description="cycles/mm")
@@ -164,7 +169,7 @@ class MtfResult(BaseModel):
     cutoff: float
 
 
-class IrradianceResult(BaseModel):
+class IrradianceResult(Base):
     extent: float
     bins: int
     grid: list[list[float]]
@@ -175,7 +180,7 @@ class IrradianceResult(BaseModel):
     n_triangles: int
 
 
-class AnalysisRequest(BaseModel):
+class AnalysisRequest(Base):
     model: SystemModel
     analyses: list[Literal["layout", "spot", "rayfan", "opd", "mtf", "irradiance"]] = Field(
         default_factory=lambda: ["layout", "spot", "rayfan", "mtf"]
@@ -186,7 +191,7 @@ class AnalysisRequest(BaseModel):
     layout_rays: int = Field(7, ge=3, le=41)
 
 
-class AnalysisResult(BaseModel):
+class AnalysisResult(Base):
     paraxial: list[ParaxialResult] = Field(default_factory=list)
     layout: Layout | None = None
     spots: list[SpotResult] = Field(default_factory=list)
@@ -197,7 +202,7 @@ class AnalysisResult(BaseModel):
     image_z: float = 0.0
 
 
-class JobStatus(BaseModel):
+class JobStatus(Base):
     id: str
     state: Literal["queued", "running", "done", "cancelled", "error"]
     progress: float = 0.0
@@ -206,7 +211,7 @@ class JobStatus(BaseModel):
     error: str | None = None
 
 
-class ApiSchema(BaseModel):
+class ApiSchema(Base):
     """Root used only to export a single JSON schema containing every public type."""
     request: AnalysisRequest
     status: JobStatus

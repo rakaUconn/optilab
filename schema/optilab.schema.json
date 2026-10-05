@@ -49,7 +49,12 @@
         }
       },
       "required": [
-        "model"
+        "model",
+        "analyses",
+        "autofocus",
+        "pupil_rings",
+        "fan_points",
+        "layout_rays"
       ],
       "title": "AnalysisRequest",
       "type": "object"
@@ -119,6 +124,16 @@
           "type": "array"
         }
       },
+      "required": [
+        "paraxial",
+        "layout",
+        "spots",
+        "rayfans",
+        "opd",
+        "mtf",
+        "irradiance",
+        "image_z"
+      ],
       "title": "AnalysisResult",
       "type": "object"
     },
@@ -138,6 +153,10 @@
           "type": "number"
         }
       },
+      "required": [
+        "kind",
+        "value"
+      ],
       "title": "Aperture",
       "type": "object"
     },
@@ -170,6 +189,11 @@
           "title": "Z"
         }
       },
+      "required": [
+        "z",
+        "half_width",
+        "bins"
+      ],
       "title": "Detector",
       "type": "object"
     },
@@ -187,6 +211,10 @@
           "type": "number"
         }
       },
+      "required": [
+        "angle",
+        "weight"
+      ],
       "title": "FieldPoint",
       "type": "object"
     },
@@ -297,7 +325,11 @@
       },
       "required": [
         "id",
-        "state"
+        "state",
+        "progress",
+        "message",
+        "result",
+        "error"
       ],
       "title": "JobStatus",
       "type": "object"
@@ -527,6 +559,16 @@
           "type": "integer"
         }
       },
+      "required": [
+        "derive_from_sequential",
+        "extra_solids",
+        "source",
+        "detector",
+        "max_events",
+        "min_weight",
+        "tess_rings",
+        "tess_segments"
+      ],
       "title": "NonSeq",
       "type": "object"
     },
@@ -719,6 +761,11 @@
           "type": "array"
         }
       },
+      "required": [
+        "name",
+        "index",
+        "triangles"
+      ],
       "title": "Solid",
       "type": "object"
     },
@@ -756,6 +803,13 @@
           "type": "number"
         }
       },
+      "required": [
+        "kind",
+        "beam_diameter",
+        "n",
+        "angle",
+        "z"
+      ],
       "title": "Source",
       "type": "object"
     },
@@ -865,6 +919,14 @@
           "type": "number"
         }
       },
+      "required": [
+        "radius",
+        "thickness",
+        "glass",
+        "semi_diameter",
+        "conic",
+        "is_stop"
+      ],
       "title": "Surface",
       "type": "object"
     },
@@ -909,7 +971,13 @@
         }
       },
       "required": [
-        "surfaces"
+        "name",
+        "surfaces",
+        "fields",
+        "wavelengths",
+        "primary_wavelength",
+        "aperture",
+        "nonseq"
       ],
       "title": "SystemModel",
       "type": "object"
@@ -928,6 +996,10 @@
           "type": "number"
         }
       },
+      "required": [
+        "um",
+        "weight"
+      ],
       "title": "Wavelength",
       "type": "object"
     }

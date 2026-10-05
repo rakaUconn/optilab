@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 224 20% 7%;
+    --foreground: 210 20% 92%;
+    --card: 224 20% 9%;
+    --card-foreground: 210 20% 92%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 223 16% 15%;
+    --secondary-foreground: 210 20% 92%;
+    --muted: 223 16% 13%;
+    --muted-foreground: 215 14% 62%;
+    --accent: 223 16% 18%;
+    --accent-foreground: 210 20% 96%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 223 14% 19%;
+    --input: 223 14% 22%;
+    --ring: 217 91% 60%;
+  }
+  * { @apply border-border; }
+  html, body, #root { height: 100%; }
+  body { @apply bg-background text-foreground antialiased; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; overflow: hidden; }
+  input, select { color-scheme: dark; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--input)); border-radius: 6px; border: 2px solid hsl(var(--background)); }
+}
+
+.num { font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
