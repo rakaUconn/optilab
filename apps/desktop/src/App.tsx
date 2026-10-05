@@ -23,7 +23,7 @@ export default function App() {
   return (
     <div className="grid h-full grid-rows-[44px_minmax(0,1fr)_320px]">
       <Toolbar engine={engine} />
-      <div className="grid min-h-0 grid-cols-[minmax(340px,400px)_minmax(0,1fr)_280px]">
+      <div className="grid min-h-0 grid-cols-[480px_minmax(0,1fr)_280px]">
         <SurfaceTable />
         <Layout3D />
         <Inspector />

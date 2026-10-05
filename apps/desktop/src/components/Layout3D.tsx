@@ -128,7 +128,7 @@ export function Layout3D() {
     scene.add(content);
     let camera: THREE.Camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1000, 1000);
     let controls: OrbitControls | null = null;
-    let bounds = { cx: 0, half: 50 };
+    let bounds = { cx: 0, half: 50, ymax: 10 };
     let mode: "2d" | "3d" = "2d";
 
     const frame = () => {
@@ -136,8 +136,8 @@ export function Layout3D() {
       renderer.setSize(w, h);
       if (camera instanceof THREE.OrthographicCamera) {
         const a = w / h;
-        const hh = (bounds.half / Math.min(a, 1)) * 0.55;
-        camera.left = bounds.cx - hh * a; camera.right = bounds.cx + hh * a;
+        const hh = Math.max((bounds.half * 1.08) / a, bounds.ymax * 1.5);
+        camera.left = -hh * a; camera.right = hh * a;
         camera.top = hh; camera.bottom = -hh; camera.updateProjectionMatrix();
       } else if (camera instanceof THREE.PerspectiveCamera) {
         camera.aspect = w / h; camera.updateProjectionMatrix();
@@ -154,7 +154,7 @@ export function Layout3D() {
         controls.enableRotate = false;
       } else {
         const p = new THREE.PerspectiveCamera(35, 1, 0.1, 5000);
-        p.position.set(bounds.cx - bounds.half * 0.2, bounds.half * 0.9, bounds.half * 1.5);
+        p.position.set(bounds.cx - bounds.half * 0.3, bounds.half * 0.75, bounds.half * 2.3);
         camera = p;
         controls = new OrbitControls(camera, renderer.domElement);
       }
@@ -173,7 +173,7 @@ export function Layout3D() {
         if (layout) {
           const z0 = layout.surface_z[0];
           const sd = Math.max(...layout.surface_sd);
-          const next = { cx: (z0 + layout.image_z) / 2, half: Math.max((layout.image_z - z0) / 2 + 10, sd * 1.2) };
+          const next = { cx: (z0 + layout.image_z) / 2, half: Math.max((layout.image_z - z0) / 2 + 10, sd * 1.2), ymax: sd };
           const refit = newMode !== mode || Math.abs(next.cx - bounds.cx) > 1e-9 || Math.abs(next.half - bounds.half) / bounds.half > 0.5;
           bounds = next;
           content.add(buildDecor(layout), buildLenses(layout, newMode), buildRays(layout, model, newMode));

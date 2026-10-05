@@ -34,10 +34,12 @@ function SpotPlot() {
   const { result, model, selField } = useStore();
   const spots = useMemo(() => (result.spots ?? []).filter((s) => s.field === selField), [result.spots, selField]);
   const option = useMemo<EChartsOption>(() => {
-    const ext = Math.max(0.005, ...spots.flatMap((s) => [...s.x, ...s.y].map((q) => Math.abs(q)))) * 1.15 * 1000;
+    const raw = Math.max(0.005, ...spots.flatMap((s) => [...s.x, ...s.y].map((q) => Math.abs(q)))) * 1.15 * 1000;
+    const mag = 10 ** Math.floor(Math.log10(raw));
+    const ext = Math.ceil(raw / mag) * mag;
     return {
-      grid: { left: 52, right: 16, top: 30, bottom: 36 },
-      legend: { top: 0, textStyle: { color: TXT }, itemHeight: 8 },
+      grid: { left: 52, right: 16, top: 44, bottom: 36 },
+      legend: { top: 0, type: "scroll", textStyle: { color: TXT, fontSize: 10 }, itemHeight: 8 },
       tooltip: { trigger: "item", formatter: (p: any) => `${p.seriesName}<br/>x ${p.value[0].toFixed(2)} µm, y ${p.value[1].toFixed(2)} µm` },
       xAxis: { type: "value", name: "x (µm)", min: -ext, max: ext, ...AXIS },
       yAxis: { type: "value", name: "y (µm)", min: -ext, max: ext, ...AXIS },
@@ -53,7 +55,7 @@ function SpotPlot() {
   }, [spots, model.wavelengths]);
   return (
     <div className="grid h-full grid-cols-[minmax(0,1fr)_280px]">
-      <Chart option={option} />
+      <div className="aspect-square h-full justify-self-center"><Chart option={option} /></div>
       <SpotTable />
     </div>
   );
@@ -64,7 +66,7 @@ function SpotTable() {
   return (
     <div className="overflow-auto border-l border-border p-2 text-xs">
       <table className="num w-full">
-        <thead className="text-[10px] uppercase text-muted-foreground"><tr><th className="text-left">Field°</th><th className="text-right">λ µm</th><th className="text-right">RMS µm</th><th className="text-right">Geo µm</th></tr></thead>
+        <thead className="text-[10px] text-muted-foreground"><tr><th className="text-left">Field°</th><th className="text-right">λ µm</th><th className="text-right">RMS µm</th><th className="text-right">Geo µm</th></tr></thead>
         <tbody>
           {(result.spots ?? []).map((s, i) => (
             <tr key={i} className="border-t border-border/50">
@@ -117,7 +119,7 @@ function MtfPlot() {
       grid: { left: 52, right: 16, top: 30, bottom: 36 },
       legend: { top: 0, type: "scroll", textStyle: { color: TXT }, itemHeight: 8 },
       tooltip: { trigger: "axis" },
-      xAxis: { type: "value", name: "cycles/mm", min: 0, max: prim?.cutoff, ...AXIS },
+      xAxis: { type: "value", name: "cycles/mm", min: 0, max: prim?.cutoff, ...AXIS, axisLabel: { color: TXT, formatter: (v: number) => v.toFixed(0) } },
       yAxis: { type: "value", name: "MTF", min: 0, max: 1, ...AXIS },
       series,
     } as EChartsOption;
@@ -137,7 +139,7 @@ function IrradiancePlot() {
     const label = (i: number) => (-ir.extent + (i + 0.5) * pix).toFixed(2);
     const cats = Array.from({ length: ir.bins }, (_, i) => label(i));
     return {
-      grid: { left: 56, right: 80, top: 16, bottom: 40 },
+      grid: { left: 56, right: 70, top: 16, bottom: 40 },
       tooltip: { formatter: (p: any) => `x ${label(p.value[0])} mm, y ${label(p.value[1])} mm<br/>E ${p.value[2].toExponential(3)}` },
       xAxis: { type: "category", name: "x (mm)", data: cats, axisLabel: { color: TXT, interval: Math.floor(ir.bins / 8) }, axisLine: AXIS.axisLine, nameTextStyle: AXIS.nameTextStyle },
       yAxis: { type: "category", name: "y (mm)", data: cats, axisLabel: { color: TXT, interval: Math.floor(ir.bins / 8) }, axisLine: AXIS.axisLine, nameTextStyle: AXIS.nameTextStyle },
@@ -149,7 +151,7 @@ function IrradiancePlot() {
   return (
     <div className="grid h-full grid-cols-[minmax(0,1fr)_280px]">
       <div className="relative">
-        {ir ? <Chart option={option} /> : <div className="grid h-full place-items-center text-muted-foreground">No irradiance yet — run the non-sequential trace.</div>}
+        {ir ? <div className="mx-auto aspect-square h-full"><Chart option={option} /></div> : <div className="grid h-full place-items-center text-muted-foreground">No irradiance yet — run the non-sequential trace.</div>}
       </div>
       <div className="space-y-2 overflow-auto border-l border-border p-3 text-xs">
         <Button variant="primary" className="w-full" disabled={job.running} onClick={() => void trace(["irradiance"])}>Run non-sequential trace</Button>

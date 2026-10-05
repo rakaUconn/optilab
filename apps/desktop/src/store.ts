@@ -63,8 +63,6 @@ export const useStore = create<State>((set, get) => ({
     await current?.cancel();
   },
   trace: async (analyses = SEQ) => {
-    // a new request supersedes whatever is running
-    if (current) await current.cancel().catch(() => undefined);
     const nonseq = analyses.includes("irradiance");
     const req: AnalysisRequest = {
       model: get().model, analyses, autofocus: get().autofocus,
@@ -73,7 +71,9 @@ export const useStore = create<State>((set, get) => ({
     set({ job: { running: true, progress: 0, message: "starting", error: null, kind: nonseq ? "nonseq" : "seq" } });
     const job = runJob(req, (s: JobStatus) =>
       set((st) => ({ job: { ...st.job, progress: s.progress, message: s.message } })));
-    current = job;
+    const prev = current;
+    current = job; // a new request supersedes whatever is running; stale results are ignored
+    void prev?.cancel().catch(() => undefined);
     try {
       const s = await job.done;
       if (current !== job) return;

@@ -44,11 +44,11 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
-export function Section({ title, children, right }: { title: string; children: ReactNode; right?: ReactNode }) {
+export function Section({ title, unit, children, right }: { title: string; unit?: string; children: ReactNode; right?: ReactNode }) {
   return (
     <section className="border-b border-border px-3 py-2.5">
       <div className="mb-1.5 flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}{unit && <span className="ml-1 normal-case tracking-normal">({unit})</span>}</h3>
         {right}
       </div>
       {children}

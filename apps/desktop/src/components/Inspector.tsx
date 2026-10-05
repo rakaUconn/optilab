@@ -23,7 +23,7 @@ export function Inspector() {
         </label>
       </Section>
 
-      <Section title="Fields (deg)" right={<Button variant="ghost" onClick={() => patch((m) => m.fields.push({ angle: 1, weight: 1 }))}>+</Button>}>
+      <Section title="Fields" unit="deg" right={<Button variant="ghost" onClick={() => patch((m) => m.fields.push({ angle: 1, weight: 1 }))}>+</Button>}>
         {model.fields.map((fl, i) => (
           <div key={i} className="flex items-center gap-1">
             <input type="radio" name="fld" checked={selField === i} onChange={() => set({ selField: i })} />
@@ -34,7 +34,7 @@ export function Inspector() {
         ))}
       </Section>
 
-      <Section title="Wavelengths (µm)" right={<Button variant="ghost" onClick={() => patch((m) => m.wavelengths.push({ um: 0.55, weight: 1 }))}>+</Button>}>
+      <Section title="Wavelengths" unit="µm" right={<Button variant="ghost" onClick={() => patch((m) => m.wavelengths.push({ um: 0.55, weight: 1 }))}>+</Button>}>
         {model.wavelengths.map((w, i) => (
           <div key={i} className="flex items-center gap-1">
             <input type="radio" name="pri" title="primary" checked={model.primary_wavelength === i} onChange={() => patch((m) => { m.primary_wavelength = i; })} />
@@ -56,7 +56,7 @@ export function Inspector() {
         )}
       </Section>
 
-      <Section title="First-order (primary λ)">
+      <Section title="First-order" unit="primary λ">
         <dl className="num grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 text-xs">
           <dt className="text-muted-foreground">EFL</dt><dd>{f(par?.efl)}</dd>
           <dt className="text-muted-foreground">BFL</dt><dd>{f(par?.bfl)}</dd>
@@ -66,7 +66,7 @@ export function Inspector() {
         </dl>
       </Section>
 
-      <Section title={`RMS spot, field ${selField}`}>
+      <Section title="RMS spot" unit={`field ${selField}`}>
         <dl className="num grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 text-xs">
           {(spot ?? []).map((sp) => (
             <div key={sp.wavelength} className="contents">

@@ -41,14 +41,14 @@ export function SurfaceTable() {
               <tr key={i} onClick={() => set({ selSurface: i })}
                 className={cx("border-t border-border/60", selSurface === i ? "bg-accent/60" : "hover:bg-muted")}>
                 <td className="num px-1 text-muted-foreground">{i}</td>
-                <td className="w-[72px]"><NumInput value={s.radius} onChange={(v) => patch((m) => { m.surfaces[i].radius = v; })} title="0 = flat" /></td>
-                <td className="w-[64px]"><NumInput value={s.thickness} onChange={(v) => patch((m) => { m.surfaces[i].thickness = v; })} /></td>
-                <td className="w-[84px]">
+                <td className="w-[84px]"><NumInput value={s.radius} onChange={(v) => patch((m) => { m.surfaces[i].radius = v; })} title="0 = flat" /></td>
+                <td className="w-[70px]"><NumInput value={s.thickness} onChange={(v) => patch((m) => { m.surfaces[i].thickness = v; })} /></td>
+                <td className="w-[96px]">
                   <input list="glasses" value={s.glass} onChange={(e) => patch((m) => { m.surfaces[i].glass = e.target.value; })}
                     className="h-6 w-full rounded-sm border border-transparent bg-transparent px-1 text-xs hover:border-input focus:border-ring focus:bg-muted focus:outline-none" />
                 </td>
-                <td className="w-[52px]"><NumInput value={s.semi_diameter} min={0.01} onChange={(v) => patch((m) => { m.surfaces[i].semi_diameter = v; })} /></td>
-                <td className="w-[52px]"><NumInput value={s.conic} onChange={(v) => patch((m) => { m.surfaces[i].conic = v; })} /></td>
+                <td className="w-[60px]"><NumInput value={s.semi_diameter} min={0.01} onChange={(v) => patch((m) => { m.surfaces[i].semi_diameter = v; })} /></td>
+                <td className="w-[56px]"><NumInput value={s.conic} onChange={(v) => patch((m) => { m.surfaces[i].conic = v; })} /></td>
                 <td className="text-center">
                   <input type="checkbox" checked={s.is_stop} onChange={(e) => patch((m) => { m.surfaces.forEach((x, j) => { x.is_stop = e.target.checked && j === i; }); })} />
                 </td>
