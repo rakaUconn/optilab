@@ -22,6 +22,7 @@ class Patch:
     n_back: float
     name: str = ""
     mirror: bool = False
+    absorb: bool = False
 
 
 def sag(r: np.ndarray, radius: float, k: float) -> np.ndarray:

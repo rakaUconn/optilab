@@ -17,9 +17,17 @@ export type Kind = string;
 export type Name = string;
 export type PartNumber = string;
 /**
+ * rays that hit ``triangles`` are absorbed (baffles, apertures)
+ */
+export type Absorbing = boolean;
+/**
  * Constant index or a glass name
  */
 export type Index = number | string;
+/**
+ * primitive / catalogue kind (box, cylinder, sphere, mirror-plate, aperture, …)
+ */
+export type Kind1 = string;
 export type MirrorTriangles = number[][][];
 export type Name1 = string;
 export type Position = number[];
@@ -78,7 +86,7 @@ export type ImageZ = number;
 export type SurfaceZ = number[];
 export type Wavelength = number;
 export type Paraxial = ParaxialResult[];
-export type Kind1 = "epd";
+export type Kind2 = "epd";
 /**
  * Entrance pupil diameter (mm)
  */
@@ -111,9 +119,13 @@ export type MaxEvents = number;
  * Prune rays below this fraction of one launched ray weight
  */
 export type MinWeight = number;
+/**
+ * Number of source rays whose paths are returned for display
+ */
+export type PreviewRays = number;
 export type Angle1 = number;
 export type BeamDiameter = number;
-export type Kind2 = "collimated_grid";
+export type Kind3 = "collimated_grid";
 /**
  * Grid samples across diameter
  */
@@ -122,6 +134,14 @@ export type N = number;
  * (x, y) centre of the grid in the start plane
  */
 export type Offset = number[];
+/**
+ * Free pose: grid centre. When set, z/offset/angle are ignored
+ */
+export type Position1 = number[] | null;
+/**
+ * Free pose: beam direction = Rz·Ry·Rx · (0,0,1)
+ */
+export type RotationDeg1 = number[];
 /**
  * Start plane (mm)
  */
@@ -153,6 +173,10 @@ export type GhostPowerFraction = number;
 export type Grid = number[][];
 export type NRaysLaunched = number;
 export type NTriangles = number;
+/**
+ * [x0,y0,z0,x1,y1,z1,weight,n_partial_reflections] of previewed paths
+ */
+export type Segments = number[][];
 export type TotalPower = number;
 export type GlassAfter = string[];
 export type ImageZ2 = number;
@@ -257,12 +281,21 @@ export interface CatalogEntry {
  * via the `definition` "Solid".
  */
 export interface Solid {
+  absorbing: Absorbing;
   index: Index;
+  kind: Kind1;
   mirror_triangles: MirrorTriangles;
   name: Name1;
+  params: Params;
   position: Position;
   rotation_deg: RotationDeg;
   triangles: Triangles;
+}
+/**
+ * parameters the UI regenerates the mesh from
+ */
+export interface Params {
+  [k: string]: number;
 }
 /**
  * This interface was referenced by `ApiSchema`'s JSON-Schema
@@ -325,7 +358,7 @@ export interface SystemModel {
  * via the `definition` "Aperture".
  */
 export interface Aperture {
-  kind: Kind1;
+  kind: Kind2;
   value: Value;
 }
 /**
@@ -346,6 +379,7 @@ export interface NonSeq {
   extra_solids: ExtraSolids;
   max_events: MaxEvents;
   min_weight: MinWeight;
+  preview_rays: PreviewRays;
   source: Source1;
   tess_rings: TessRings;
   tess_segments: TessSegments;
@@ -368,9 +402,11 @@ export interface Detector {
 export interface Source1 {
   angle: Angle1;
   beam_diameter: BeamDiameter;
-  kind: Kind2;
+  kind: Kind3;
   n: N;
   offset: Offset;
+  position: Position1;
+  rotation_deg: RotationDeg1;
   z: Z1;
 }
 /**
@@ -431,6 +467,7 @@ export interface IrradianceResult {
   grid: Grid;
   n_rays_launched: NRaysLaunched;
   n_triangles: NTriangles;
+  segments: Segments;
   total_power: TotalPower;
 }
 /**

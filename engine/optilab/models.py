@@ -48,6 +48,9 @@ class Solid(Base):
     then ``position``.
     """
     name: str = "solid"
+    kind: str = Field("", description="primitive / catalogue kind (box, cylinder, sphere, mirror-plate, aperture, …)")
+    params: dict[str, float] = Field(default_factory=dict, description="parameters the UI regenerates the mesh from")
+    absorbing: bool = Field(False, description="rays that hit ``triangles`` are absorbed (baffles, apertures)")
     index: float | str = Field(1.5, description="Constant index or a glass name")
     triangles: list[list[list[float]]] = Field(default_factory=list)
     mirror_triangles: list[list[list[float]]] = Field(default_factory=list)
@@ -62,6 +65,8 @@ class Source(Base):
     angle: float = 0.0
     z: float = Field(-5.0, description="Start plane (mm)")
     offset: list[float] = Field(default_factory=lambda: [0.0, 0.0], description="(x, y) centre of the grid in the start plane")
+    position: list[float] | None = Field(None, description="Free pose: grid centre. When set, z/offset/angle are ignored")
+    rotation_deg: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0], description="Free pose: beam direction = Rz·Ry·Rx · (0,0,1)")
 
 
 class Detector(Base):
@@ -79,6 +84,7 @@ class NonSeq(Base):
     detector: Detector = Field(default_factory=Detector)
     max_events: int = Field(8, ge=1, le=20)
     min_weight: float = Field(1e-3, gt=0, description="Prune rays below this fraction of one launched ray weight")
+    preview_rays: int = Field(60, ge=0, le=400, description="Number of source rays whose paths are returned for display")
     tess_rings: int = Field(16, ge=4, le=64)
     tess_segments: int = Field(48, ge=12, le=180)
 
@@ -189,6 +195,7 @@ class IrradianceResult(Base):
     ghost_power_fraction: float
     n_rays_launched: int
     n_triangles: int
+    segments: list[list[float]] = Field(default_factory=list, description="[x0,y0,z0,x1,y1,z1,weight,n_partial_reflections] of previewed paths")
 
 
 class AnalysisRequest(Base):

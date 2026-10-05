@@ -451,6 +451,17 @@
           "title": "N Triangles",
           "type": "integer"
         },
+        "segments": {
+          "description": "[x0,y0,z0,x1,y1,z1,weight,n_partial_reflections] of previewed paths",
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Segments",
+          "type": "array"
+        },
         "total_power": {
           "title": "Total Power",
           "type": "number"
@@ -464,7 +475,8 @@
         "ghost_paths",
         "ghost_power_fraction",
         "n_rays_launched",
-        "n_triangles"
+        "n_triangles",
+        "segments"
       ],
       "title": "IrradianceResult",
       "type": "object"
@@ -738,6 +750,14 @@
           "title": "Min Weight",
           "type": "number"
         },
+        "preview_rays": {
+          "default": 60,
+          "description": "Number of source rays whose paths are returned for display",
+          "maximum": 400,
+          "minimum": 0,
+          "title": "Preview Rays",
+          "type": "integer"
+        },
         "source": {
           "$ref": "#/$defs/Source"
         },
@@ -763,6 +783,7 @@
         "detector",
         "max_events",
         "min_weight",
+        "preview_rays",
         "tess_rings",
         "tess_segments"
       ],
@@ -945,6 +966,12 @@
     "Solid": {
       "description": "Non-sequential solid (convex or not; triangles must be wound outward).\n\n``triangles`` are refracting faces (glass of ``index``); ``mirror_triangles`` are fully reflective faces.\nThe mesh is given in local coordinates and placed with ``rotation_deg`` (rx, ry, rz; applied as Rz\u00b7Ry\u00b7Rx)\nthen ``position``.",
       "properties": {
+        "absorbing": {
+          "default": false,
+          "description": "rays that hit ``triangles`` are absorbed (baffles, apertures)",
+          "title": "Absorbing",
+          "type": "boolean"
+        },
         "index": {
           "anyOf": [
             {
@@ -957,6 +984,12 @@
           "default": 1.5,
           "description": "Constant index or a glass name",
           "title": "Index"
+        },
+        "kind": {
+          "default": "",
+          "description": "primitive / catalogue kind (box, cylinder, sphere, mirror-plate, aperture, \u2026)",
+          "title": "Kind",
+          "type": "string"
         },
         "mirror_triangles": {
           "items": {
@@ -975,6 +1008,14 @@
           "default": "solid",
           "title": "Name",
           "type": "string"
+        },
+        "params": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "parameters the UI regenerates the mesh from",
+          "title": "Params",
+          "type": "object"
         },
         "position": {
           "items": {
@@ -1006,6 +1047,9 @@
       },
       "required": [
         "name",
+        "kind",
+        "params",
+        "absorbing",
         "index",
         "triangles",
         "mirror_triangles",
@@ -1050,6 +1094,30 @@
           "title": "Offset",
           "type": "array"
         },
+        "position": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Free pose: grid centre. When set, z/offset/angle are ignored",
+          "title": "Position"
+        },
+        "rotation_deg": {
+          "description": "Free pose: beam direction = Rz\u00b7Ry\u00b7Rx \u00b7 (0,0,1)",
+          "items": {
+            "type": "number"
+          },
+          "title": "Rotation Deg",
+          "type": "array"
+        },
         "z": {
           "default": -5.0,
           "description": "Start plane (mm)",
@@ -1063,7 +1131,9 @@
         "n",
         "angle",
         "z",
-        "offset"
+        "offset",
+        "position",
+        "rotation_deg"
       ],
       "title": "Source",
       "type": "object"
